@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C6A9791D-4959-4CE9-942F-EF38C6A5DF7E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiscalDocs.Domain", "src\FiscalDocs.Domain\FiscalDocs.Domain.csproj", "{730C6A2C-4AD7-479B-95BD-01B16551A206}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiscalDocs.Application", "src\FiscalDocs.Application\FiscalDocs.Application.csproj", "{7FEDA694-4FCE-4F90-BF75-0211A1BD7FAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiscalDocs.Infrastructure", "src\FiscalDocs.Infrastructure\FiscalDocs.Infrastructure.csproj", "{9D9E68D6-ACF7-45F1-8A9E-AEE34C66AEAD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiscalDocs.Api", "src\FiscalDocs.Api\FiscalDocs.Api.csproj", "{F7103259-6658-438E-81C3-67726C69948B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiscalDocs.Worker", "src\FiscalDocs.Worker\FiscalDocs.Worker.csproj", "{840C8CC9-63A5-404B-874B-56AFBD51B44A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{730C6A2C-4AD7-479B-95BD-01B16551A206}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{730C6A2C-4AD7-479B-95BD-01B16551A206}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{730C6A2C-4AD7-479B-95BD-01B16551A206}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{730C6A2C-4AD7-479B-95BD-01B16551A206}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FEDA694-4FCE-4F90-BF75-0211A1BD7FAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FEDA694-4FCE-4F90-BF75-0211A1BD7FAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FEDA694-4FCE-4F90-BF75-0211A1BD7FAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FEDA694-4FCE-4F90-BF75-0211A1BD7FAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D9E68D6-ACF7-45F1-8A9E-AEE34C66AEAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D9E68D6-ACF7-45F1-8A9E-AEE34C66AEAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D9E68D6-ACF7-45F1-8A9E-AEE34C66AEAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D9E68D6-ACF7-45F1-8A9E-AEE34C66AEAD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7103259-6658-438E-81C3-67726C69948B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7103259-6658-438E-81C3-67726C69948B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7103259-6658-438E-81C3-67726C69948B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7103259-6658-438E-81C3-67726C69948B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{840C8CC9-63A5-404B-874B-56AFBD51B44A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{840C8CC9-63A5-404B-874B-56AFBD51B44A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{840C8CC9-63A5-404B-874B-56AFBD51B44A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{840C8CC9-63A5-404B-874B-56AFBD51B44A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{730C6A2C-4AD7-479B-95BD-01B16551A206} = {C6A9791D-4959-4CE9-942F-EF38C6A5DF7E}
+		{7FEDA694-4FCE-4F90-BF75-0211A1BD7FAA} = {C6A9791D-4959-4CE9-942F-EF38C6A5DF7E}
+		{9D9E68D6-ACF7-45F1-8A9E-AEE34C66AEAD} = {C6A9791D-4959-4CE9-942F-EF38C6A5DF7E}
+		{F7103259-6658-438E-81C3-67726C69948B} = {C6A9791D-4959-4CE9-942F-EF38C6A5DF7E}
+		{840C8CC9-63A5-404B-874B-56AFBD51B44A} = {C6A9791D-4959-4CE9-942F-EF38C6A5DF7E}
+	EndGlobalSection
+EndGlobal
