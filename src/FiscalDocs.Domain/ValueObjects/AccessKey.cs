@@ -16,7 +16,7 @@ public sealed record AccessKey
         IssuerCnpj = issuerCnpj;
     }
 
-    public static AccessKey Parse(string? input) => 
+    public static AccessKey Parse(string? input) =>
     TryParse(input, out var key) ? key
     : throw new FormatException("Invalid Access Key.");
 
@@ -29,16 +29,16 @@ public sealed record AccessKey
             return false;
         }
         var stripped = input.Replace(" ", "");
-        if(!Regex.IsMatch(stripped, @"\A[0-9]{6}[0-9A-Za-z]{12}[0-9]{26}\z"))
+        if (!Regex.IsMatch(stripped, @"\A[0-9]{6}[0-9A-Za-z]{12}[0-9]{26}\z"))
         {
             return false;
         }
         var normalized = stripped.ToUpperInvariant();
-        if(normalized[^1] - '0' != Mod11.ComputeCheckDigit(normalized.AsSpan(0,43)))
+        if (normalized[^1] - '0' != Mod11.ComputeCheckDigit(normalized.AsSpan(0, 43)))
         {
             return false;
         }
-         if (!Cnpj.TryParse(normalized[6..20], out var issuerCnpj))
+        if (!Cnpj.TryParse(normalized[6..20], out var issuerCnpj))
             return false;
 
         key = new AccessKey(normalized, issuerCnpj);

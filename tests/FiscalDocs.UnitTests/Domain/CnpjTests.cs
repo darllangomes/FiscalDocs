@@ -62,6 +62,6 @@ public class CnpjTests
     public void Formatted_AlphanumericCnpj_AppliedMask()
     {
         Cnpj.Parse("12ABC34501DE35").Formatted.Should().Be("12.ABC.345/01DE-35");
-        
+
     }
 }

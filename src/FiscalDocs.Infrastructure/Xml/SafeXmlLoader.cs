@@ -22,9 +22,10 @@ public static class SafeXmlLoader
 
         try
         {
-            using var reader = XmlReader.Create(stream,settings);
+            using var reader = XmlReader.Create(stream, settings);
             return XDocument.Load(reader);
-        }catch(XmlException ex)
+        }
+        catch (XmlException ex)
         {
             throw new InvalidDocumentException("The XML document is invalid or not allowed.", ex);
         }
