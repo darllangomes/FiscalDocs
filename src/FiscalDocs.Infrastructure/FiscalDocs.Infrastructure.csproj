@@ -2,7 +2,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FiscalDocs.Application\FiscalDocs.Application.csproj" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" /> 
   </ItemGroup>
+
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
