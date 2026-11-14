@@ -43,7 +43,7 @@ public sealed class NFeParser : IDocumentParser
         }
 
         var issuerName = RequiredText(emit, "xNome");
-var issuerState = RequiredText(Required(emit, "enderEmit"), "UF");
+        var issuerState = RequiredText(Required(emit, "enderEmit"), "UF");
         var number = RequiredText(ide, "nNF");
         var series = RequiredText(ide, "serie");
 
@@ -65,7 +65,7 @@ var issuerState = RequiredText(Required(emit, "enderEmit"), "UF");
         string? recipientState = null;
 
         var dest = inf.Element(Ns + "dest");
-        if(dest is not null)
+        if (dest is not null)
         {
             recipientDocument = (dest.Element(Ns + "CPF")
                 ?? dest.Element(Ns + "CNPJ")
