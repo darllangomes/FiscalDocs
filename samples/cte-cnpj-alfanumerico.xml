@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cteProc xmlns="http://www.portalfiscal.inf.br/cte" versao="4.00">
+  <CTe>
+    <infCte Id="CTe3526087K9X2M4P000144570010000040041456789018" versao="4.00">
+      <ide>
+        <cUF>35</cUF>
+        <cCT>45678901</cCT>
+        <CFOP>6353</CFOP>
+        <natOp>PRESTACAO DE SERVICO DE TRANSPORTE</natOp>
+        <mod>57</mod>
+        <serie>1</serie>
+        <nCT>4004</nCT>
+        <dhEmi>2026-08-22T16:45:00-03:00</dhEmi>
+        <tpAmb>2</tpAmb>
+        <UFIni>SP</UFIni>
+        <UFFim>MG</UFFim>
+      </ide>
+      <emit>
+        <CNPJ>7K9X2M4P000144</CNPJ>
+        <xNome>TRANSPORTADORA FICTICIA ALFANUMERICA LTDA</xNome>
+        <enderEmit>
+          <xLgr>AVENIDA DOS FRETES</xLgr>
+          <nro>900</nro>
+          <xBairro>VILA LOGISTICA</xBairro>
+          <cMun>3550308</cMun>
+          <xMun>SAO PAULO</xMun>
+          <UF>SP</UF>
+        </enderEmit>
+      </emit>
+      <rem>
+        <CNPJ>A1B2C3D4000193</CNPJ>
+        <xNome>REMETENTE ALFANUMERICO FICTICIO LTDA</xNome>
+        <enderReme>
+          <xLgr>RUA DO ORIGEM</xLgr>
+          <nro>70</nro>
+          <xBairro>CENTRO</xBairro>
+          <xMun>SAO PAULO</xMun>
+          <UF>SP</UF>
+        </enderReme>
+      </rem>
+      <dest>
+        <CNPJ>99888777000100</CNPJ>
+        <xNome>DESTINATARIO FICTICIO S/A</xNome>
+        <enderDest>
+          <xLgr>RUA DO DESTINO</xLgr>
+          <nro>80</nro>
+          <xBairro>SAVASSI</xBairro>
+          <xMun>BELO HORIZONTE</xMun>
+          <UF>MG</UF>
+        </enderDest>
+      </dest>
+      <vPrest>
+        <vTPrest>4120.75</vTPrest>
+        <vRec>4120.75</vRec>
+      </vPrest>
+    </infCte>
+  </CTe>
+  <protCTe versao="4.00">
+    <infProt>
+      <tpAmb>2</tpAmb>
+      <chCTe>3526087K9X2M4P000144570010000040041456789018</chCTe>
+      <dhRecbto>2026-08-22T16:45:07-03:00</dhRecbto>
+      <nProt>135000000000004</nProt>
+      <cStat>100</cStat>
+      <xMotivo>Autorizado o uso do CT-e</xMotivo>
+    </infProt>
+  </protCTe>
+</cteProc>

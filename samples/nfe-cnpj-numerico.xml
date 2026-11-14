@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe26260811222333000181550010000010011123456782" versao="4.00">
+      <ide>
+        <cUF>26</cUF>
+        <cNF>12345678</cNF>
+        <natOp>VENDA DE MERCADORIA</natOp>
+        <mod>55</mod>
+        <serie>1</serie>
+        <nNF>1001</nNF>
+        <dhEmi>2026-08-14T10:30:00-03:00</dhEmi>
+        <tpNF>1</tpNF>
+        <tpAmb>2</tpAmb>
+      </ide>
+      <emit>
+        <CNPJ>11222333000181</CNPJ>
+        <xNome>EMPRESA FICTICIA NUMERICA LTDA</xNome>
+        <enderEmit>
+          <xLgr>RUA DOS TESTES</xLgr>
+          <nro>100</nro>
+          <xBairro>CENTRO</xBairro>
+          <cMun>2611606</cMun>
+          <xMun>RECIFE</xMun>
+          <UF>PE</UF>
+          <CEP>50000000</CEP>
+        </enderEmit>
+      </emit>
+      <dest>
+        <CPF>12345678909</CPF>
+        <xNome>CLIENTE FICTICIO DA SILVA</xNome>
+        <enderDest>
+          <xLgr>AVENIDA DOS EXEMPLOS</xLgr>
+          <nro>200</nro>
+          <xBairro>JARDINS</xBairro>
+          <cMun>3550308</cMun>
+          <xMun>SAO PAULO</xMun>
+          <UF>SP</UF>
+          <CEP>01000000</CEP>
+        </enderDest>
+      </dest>
+      <total>
+        <ICMSTot>
+          <vProd>1500.00</vProd>
+          <vNF>1500.00</vNF>
+        </ICMSTot>
+      </total>
+    </infNFe>
+  </NFe>
+  <protNFe versao="4.00">
+    <infProt>
+      <tpAmb>2</tpAmb>
+      <chNFe>26260811222333000181550010000010011123456782</chNFe>
+      <dhRecbto>2026-08-14T10:30:05-03:00</dhRecbto>
+      <nProt>126000000000001</nProt>
+      <cStat>100</cStat>
+      <xMotivo>Autorizado o uso da NF-e</xMotivo>
+    </infProt>
+  </protNFe>
+</nfeProc>

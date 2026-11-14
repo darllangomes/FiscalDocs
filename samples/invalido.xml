@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe26260811222333000181550010000010011123456782" versao="4.00">
+      <ide>
+        <cUF>26</cUF>
+        <nNF>1001</nNF>
+        <dhEmi>2026-08-14T10:30:00-03:00</dhEmi>
+      </ide>
+      <emit>
+        <CNPJ>11222333000181</CNPJ>
+        <xNome>XML MAL FORMADO: tag emit nunca e fechada</xNome>
+      <dest>
+        <xNome>SEM DOCUMENTO</xNome>
+      </dest>
+    </infNFe>
+  </NFe>

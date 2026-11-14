@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe26260812ABC34501DE35550010000020021234567895" versao="4.00">
+      <ide>
+        <cUF>26</cUF>
+        <cNF>23456789</cNF>
+        <natOp>VENDA DE MERCADORIA</natOp>
+        <mod>55</mod>
+        <serie>1</serie>
+        <nNF>2002</nNF>
+        <dhEmi>2026-08-20T14:15:00-03:00</dhEmi>
+        <tpNF>1</tpNF>
+        <tpAmb>2</tpAmb>
+      </ide>
+      <emit>
+        <CNPJ>12ABC34501DE35</CNPJ>
+        <xNome>EMPRESA FICTICIA ALFANUMERICA LTDA</xNome>
+        <enderEmit>
+          <xLgr>RUA DAS LETRAS</xLgr>
+          <nro>300</nro>
+          <xBairro>BOA VISTA</xBairro>
+          <cMun>2611606</cMun>
+          <xMun>RECIFE</xMun>
+          <UF>PE</UF>
+          <CEP>50050000</CEP>
+        </enderEmit>
+      </emit>
+      <dest>
+        <CNPJ>99888777000100</CNPJ>
+        <xNome>COMERCIAL DESTINO FICTICIA S/A</xNome>
+        <enderDest>
+          <xLgr>RUA DO DESTINO</xLgr>
+          <nro>400</nro>
+          <xBairro>PITUBA</xBairro>
+          <cMun>2927408</cMun>
+          <xMun>SALVADOR</xMun>
+          <UF>BA</UF>
+          <CEP>41800000</CEP>
+        </enderDest>
+      </dest>
+      <total>
+        <ICMSTot>
+          <vProd>8750.50</vProd>
+          <vNF>8750.50</vNF>
+        </ICMSTot>
+      </total>
+    </infNFe>
+  </NFe>
+  <protNFe versao="4.00">
+    <infProt>
+      <tpAmb>2</tpAmb>
+      <chNFe>26260812ABC34501DE35550010000020021234567895</chNFe>
+      <dhRecbto>2026-08-20T14:15:04-03:00</dhRecbto>
+      <nProt>126000000000002</nProt>
+      <cStat>100</cStat>
+      <xMotivo>Autorizado o uso da NF-e</xMotivo>
+    </infProt>
+  </protNFe>
+</nfeProc>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nfeProc [
+  <!ENTITY xxe SYSTEM "file:///C:/Windows/win.ini">
+]>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe26260811222333000181550010000010011123456782" versao="4.00">
+      <ide>
+        <cUF>26</cUF>
+        <cNF>12345678</cNF>
+        <natOp>VENDA DE MERCADORIA</natOp>
+        <mod>55</mod>
+        <serie>1</serie>
+        <nNF>1001</nNF>
+        <dhEmi>2026-08-14T10:30:00-03:00</dhEmi>
+      </ide>
+      <emit>
+        <CNPJ>11222333000181</CNPJ>
+        <xNome>&xxe;</xNome>
+        <enderEmit>
+          <UF>PE</UF>
+        </enderEmit>
+      </emit>
+      <dest>
+        <CPF>12345678909</CPF>
+        <xNome>ALVO DO TESTE XXE</xNome>
+        <enderDest>
+          <UF>SP</UF>
+        </enderDest>
+      </dest>
+      <total>
+        <ICMSTot>
+          <vNF>1.00</vNF>
+        </ICMSTot>
+      </total>
+    </infNFe>
+  </NFe>
+</nfeProc>
