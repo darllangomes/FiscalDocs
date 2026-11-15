@@ -1,3 +1,4 @@
+using FiscalDocs.Application.Documents;
 using FiscalDocs.Application.Ingestion;
 using FiscalDocs.Application.Parsing;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,7 @@ public static class DependencyInjection
 
         services.AddSingleton<DocumentParserResolver>();
         services.AddScoped<IngestDocumentHandler>();
+        services.AddScoped<GetDocumentHandler>();
 
         return services;
     }

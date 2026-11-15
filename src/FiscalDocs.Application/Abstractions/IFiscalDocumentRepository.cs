@@ -1,3 +1,4 @@
+using FiscalDocs.Application.Documents;
 using FiscalDocs.Domain.Entities;
 using FiscalDocs.Domain.ValueObjects;
 
@@ -10,4 +11,7 @@ public interface IFiscalDocumentRepository
 
     /// <summary>Looks up by access key, including soft-deleted documents.</summary>
     Task<FiscalDocument?> FindByAccessKeyAsync(AccessKey accessKey, CancellationToken cancellationToken);
+
+    /// <summary>Read model for the API; excludes soft-deleted documents and never loads the raw XML.</summary>
+    Task<DocumentDetails?> FindDetailsByIdAsync(Guid id, CancellationToken cancellationToken);
 }
