@@ -23,6 +23,7 @@ public class DocumentParserResolverTests
     [TestCase("nfe-cnpj-alfanumerico.xml")]
     public void Resolve_NFeDocument_ReturnsNFeParser(string file)
     {
+        // Act & Assert
         _resolver.Resolve(Load(file)).Should().BeOfType<NFeParser>();
     }
 
@@ -30,40 +31,52 @@ public class DocumentParserResolverTests
     [TestCase("cte-cnpj-alfanumerico.xml")]
     public void Resolve_CTeDocument_ReturnsCTeParser(string file)
     {
+        // Act & Assert
         _resolver.Resolve(Load(file)).Should().BeOfType<CTeParser>();
     }
 
     [Test]
     public void Resolve_UnknownRoot_ThrowsInvalidDocumentException()
     {
+        // Arrange
         var document = new XDocument(new XElement("CompNfse"));
 
+        // Act
         var act = () => _resolver.Resolve(document);
 
+        // Assert
         act.Should().Throw<InvalidDocumentException>();
     }
 
     [Test]
     public void Resolve_NewParserRegistered_IsPickedWithoutChangingResolver()
     {
+        // Arrange
         var nfse = Substitute.For<IDocumentParser>();
         nfse.CanParse(Arg.Any<XDocument>()).Returns(true);
         var resolver = new DocumentParserResolver([new NFeParser(), new CTeParser(), nfse]);
 
-        resolver.Resolve(new XDocument(new XElement("CompNfse"))).Should().BeSameAs(nfse);
+        // Act
+        var parser = resolver.Resolve(new XDocument(new XElement("CompNfse")));
+
+        // Assert
+        parser.Should().BeSameAs(nfse);
     }
 
     [Test]
     public void Resolve_MoreThanOneParserAccepts_ThrowsInvalidOperationException()
     {
+        // Arrange
         var first = Substitute.For<IDocumentParser>();
         var second = Substitute.For<IDocumentParser>();
         first.CanParse(Arg.Any<XDocument>()).Returns(true);
         second.CanParse(Arg.Any<XDocument>()).Returns(true);
         var resolver = new DocumentParserResolver([first, second]);
 
+        // Act
         var act = () => resolver.Resolve(new XDocument(new XElement("x")));
 
+        // Assert
         act.Should().Throw<InvalidOperationException>();
     }
 }

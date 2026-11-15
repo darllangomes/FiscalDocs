@@ -79,8 +79,10 @@ public class ListDocumentsEndpointTests
     [Test]
     public async Task Default_ReturnsEverythingNewestFirstWithPagingMetadata()
     {
+        // Act
         var list = await ListAsync();
 
+        // Assert
         NumbersOf(list).Should().Equal("4004", "2002", "3003", "1001");
         list.GetProperty("page").GetInt32().Should().Be(1);
         list.GetProperty("pageSize").GetInt32().Should().Be(20);
@@ -90,9 +92,11 @@ public class ListDocumentsEndpointTests
     [Test]
     public async Task Items_AreSummaries_WithoutRawXmlOrNotes()
     {
+        // Act
         var list = await ListAsync();
-        var first = list.GetProperty("items")[0];
 
+        // Assert
+        var first = list.GetProperty("items")[0];
         first.GetProperty("id").GetGuid().Should().NotBeEmpty();
         first.GetProperty("type").GetString().Should().Be("CTe");
         first.GetProperty("status").GetString().Should().Be("Received");
@@ -105,8 +109,10 @@ public class ListDocumentsEndpointTests
     [Test]
     public async Task Paging_ReturnsRequestedSlice_AndKeepsTotalCount()
     {
+        // Act
         var list = await ListAsync("page=2&pageSize=2");
 
+        // Assert
         NumbersOf(list).Should().Equal("3003", "1001");
         list.GetProperty("page").GetInt32().Should().Be(2);
         list.GetProperty("pageSize").GetInt32().Should().Be(2);
@@ -116,8 +122,10 @@ public class ListDocumentsEndpointTests
     [Test]
     public async Task PageBeyondTheEnd_Returns200WithEmptyItems()
     {
+        // Act
         var list = await ListAsync("page=9&pageSize=2");
 
+        // Assert
         NumbersOf(list).Should().BeEmpty();
         list.GetProperty("totalCount").GetInt32().Should().Be(4);
     }
@@ -125,10 +133,14 @@ public class ListDocumentsEndpointTests
     [Test]
     public async Task WalkingPagesOfOne_VisitsEveryDocumentOnceInOrder()
     {
+        // Arrange
         var visited = new List<string>();
+
+        // Act
         for (var page = 1; page <= 4; page++)
             visited.AddRange(NumbersOf(await ListAsync($"page={page}&pageSize=1")));
 
+        // Assert
         visited.Should().Equal("4004", "2002", "3003", "1001");
     }
 
@@ -147,8 +159,10 @@ public class ListDocumentsEndpointTests
     [TestCase("issuerState=RS", new string[0])]
     public async Task Filters_ReturnOnlyMatchingDocuments(string query, string[] expected)
     {
+        // Act
         var list = await ListAsync(query);
 
+        // Assert
         NumbersOf(list).Should().Equal(expected);
         list.GetProperty("totalCount").GetInt32().Should().Be(expected.Length);
     }
@@ -156,19 +170,28 @@ public class ListDocumentsEndpointTests
     [Test]
     public async Task StatusFilter_ReturnsOnlyDocumentsInThatStatus()
     {
+        // Arrange
         await ModifyAsync("1001", d => d.UpdateManagement(DocumentStatus.Reviewed, "checked", DateTimeOffset.UtcNow));
 
-        NumbersOf(await ListAsync("status=Reviewed")).Should().Equal("1001");
-        NumbersOf(await ListAsync("status=Received")).Should().Equal("4004", "2002", "3003");
+        // Act
+        var reviewed = await ListAsync("status=Reviewed");
+        var received = await ListAsync("status=Received");
+
+        // Assert
+        NumbersOf(reviewed).Should().Equal("1001");
+        NumbersOf(received).Should().Equal("4004", "2002", "3003");
     }
 
     [Test]
     public async Task SoftDeletedDocuments_AreExcludedFromItemsAndTotal()
     {
+        // Arrange
         await ModifyAsync("3003", d => d.MarkAsDeleted(DateTimeOffset.UtcNow));
 
+        // Act
         var list = await ListAsync();
 
+        // Assert
         NumbersOf(list).Should().Equal("4004", "2002", "1001");
         list.GetProperty("totalCount").GetInt32().Should().Be(3);
     }
@@ -188,8 +211,10 @@ public class ListDocumentsEndpointTests
     [TestCase("issuedFrom=2026-08-20&issuedTo=2026-08-10")]
     public async Task InvalidQuery_Returns400ProblemDetails(string query)
     {
+        // Act
         var response = await _client.GetAsync($"{Route}?{query}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
     }
@@ -199,10 +224,13 @@ public class ListDocumentsEndpointTests
     [Test]
     public async Task WithoutApiKey_Returns401()
     {
+        // Arrange
         using var anonymous = _factory.CreateClient();
 
+        // Act
         var response = await anonymous.GetAsync(Route);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

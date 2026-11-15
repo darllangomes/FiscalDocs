@@ -18,8 +18,10 @@ public class AccessKeyTests
     [TestCase(CTeAlphanumericCnpj)]
     public void TryParse_ValidKey_ReturnsTrueAndKeepsValue(string input)
     {
+        // Act
         var ok = AccessKey.TryParse(input, out var key);
 
+        // Assert
         ok.Should().BeTrue();
         key!.Value.Should().Be(input);
     }
@@ -28,8 +30,10 @@ public class AccessKeyTests
     [TestCase("26260812abc34501de35550010000020021234567895", NFeAlphanumericCnpj)]       // lowercase
     public void TryParse_SpacesOrLowercase_NormalizesValue(string input, string expected)
     {
+        // Act
         var ok = AccessKey.TryParse(input, out var key);
 
+        // Assert
         ok.Should().BeTrue();
         key!.Value.Should().Be(expected);
     }
@@ -47,6 +51,7 @@ public class AccessKeyTests
     [TestCase(null)]
     public void TryParse_InvalidKey_ReturnsFalse(string? input)
     {
+        // Act & Assert
         AccessKey.TryParse(input, out _).Should().BeFalse();
     }
 
@@ -56,8 +61,10 @@ public class AccessKeyTests
     [TestCase(null)]
     public void Parse_InvalidKey_ThrowsFormatException(string? input)
     {
+        // Act
         var act = () => AccessKey.Parse(input);
 
+        // Assert
         act.Should().Throw<FormatException>();
     }
 
@@ -67,8 +74,10 @@ public class AccessKeyTests
     [TestCase(CTeAlphanumericCnpj, "57", "7K9X2M4P000144")]
     public void Parse_ValidKey_ExtractsModelAndIssuerCnpj(string input, string model, string issuerCnpj)
     {
+        // Act
         var key = AccessKey.Parse(input);
 
+        // Assert
         key.Model.Should().Be(model);
         key.IssuerCnpj.Value.Should().Be(issuerCnpj);
     }
@@ -76,9 +85,11 @@ public class AccessKeyTests
     [Test]
     public void Equality_SameKeyWithAndWithoutSpaces_AreEqual()
     {
+        // Arrange
         var spaced = AccessKey.Parse("2626 0811 2223 3300 0181 5500 1000 0010 0111 2345 6782");
         var plain = AccessKey.Parse(NFeNumericCnpj);
 
+        // Act & Assert
         spaced.Should().Be(plain);
     }
 }

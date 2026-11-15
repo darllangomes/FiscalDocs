@@ -45,12 +45,15 @@ public class FiscalDocumentPersistenceTests
     [TestCase(CTeKey, DocumentType.CTe)]
     public async Task SaveAndLoad_RoundTripsAllFields(string key, DocumentType type)
     {
+        // Arrange
         var original = Build(key, type);
         await SaveAsync(original);
-
         await using var context = PostgresFixture.CreateContext();
+
+        // Act
         var loaded = await context.Documents.SingleAsync(d => d.Id == original.Id);
 
+        // Assert
         loaded.Should().BeEquivalentTo(original, options => options
             .Using<DateTimeOffset>(c => c.Subject.Should().Be(c.Expectation))
             .WhenTypeIs<DateTimeOffset>());
@@ -59,12 +62,15 @@ public class FiscalDocumentPersistenceTests
     [Test]
     public async Task SaveAndLoad_IssueDateIsStoredAsUtcInstant()
     {
+        // Arrange
         var original = Build(); // issued at -03:00
         await SaveAsync(original);
-
         await using var context = PostgresFixture.CreateContext();
+
+        // Act
         var loaded = await context.Documents.SingleAsync(d => d.Id == original.Id);
 
+        // Assert
         loaded.IssueDate.Should().Be(original.IssueDate);
         loaded.IssueDate.Offset.Should().Be(TimeSpan.Zero);
     }
@@ -72,10 +78,13 @@ public class FiscalDocumentPersistenceTests
     [Test]
     public async Task Save_SameAccessKeyTwice_ThrowsUniqueViolation()
     {
+        // Arrange
         await SaveAsync(Build());
 
+        // Act
         var act = () => SaveAsync(Build());
 
+        // Assert
         var exception = await act.Should().ThrowAsync<DbUpdateException>();
         exception.Which.InnerException.Should().BeOfType<PostgresException>()
             .Which.SqlState.Should().Be(PostgresErrorCodes.UniqueViolation);
@@ -84,12 +93,13 @@ public class FiscalDocumentPersistenceTests
     [Test]
     public async Task SoftDeletedDocument_IsHiddenByQueryFilter_ButVisibleWhenIgnoringIt()
     {
+        // Arrange
         var document = Build();
         document.MarkAsDeleted(Now.AddMinutes(1));
         await SaveAsync(document);
-
         await using var context = PostgresFixture.CreateContext();
 
+        // Act & Assert
         (await context.Documents.CountAsync()).Should().Be(0);
         (await context.Documents.IgnoreQueryFilters().CountAsync()).Should().Be(1);
     }
@@ -97,46 +107,55 @@ public class FiscalDocumentPersistenceTests
     [Test]
     public async Task Save_SameAccessKeyAsSoftDeletedDocument_StillViolatesUnique()
     {
+        // Arrange
         var deleted = Build();
         deleted.MarkAsDeleted(Now.AddMinutes(1));
         await SaveAsync(deleted);
 
+        // Act
         var act = () => SaveAsync(Build());
 
+        // Assert
         await act.Should().ThrowAsync<DbUpdateException>();
     }
 
     [Test]
     public async Task Query_ByIssuerCnpjAndDateRange_ReturnsOnlyMatches()
     {
+        // Arrange
         await SaveAsync(Build(NFeKey), Build(CTeKey, DocumentType.CTe));
         var issuer = Cnpj.Parse("11222333000181");
         var from = new DateTimeOffset(2026, 8, 1, 0, 0, 0, TimeSpan.Zero);
         var to = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero);
-
         await using var context = PostgresFixture.CreateContext();
+
+        // Act
         var result = await context.Documents
             .Where(d => d.IssuerCnpj == issuer && d.IssueDate >= from && d.IssueDate < to)
             .ToListAsync();
 
+        // Assert
         result.Should().ContainSingle().Which.AccessKey.Value.Should().Be(NFeKey);
     }
 
     [Test]
     public async Task UpdateManagement_IsPersisted()
     {
+        // Arrange
         var original = Build();
         await SaveAsync(original);
-
         await using (var context = PostgresFixture.CreateContext())
         {
             var tracked = await context.Documents.SingleAsync(d => d.Id == original.Id);
             tracked.UpdateManagement(DocumentStatus.Reviewed, "checked", Now.AddMinutes(5));
             await context.SaveChangesAsync();
         }
-
         await using var verify = PostgresFixture.CreateContext();
+
+        // Act
         var loaded = await verify.Documents.SingleAsync(d => d.Id == original.Id);
+
+        // Assert
         loaded.Status.Should().Be(DocumentStatus.Reviewed);
         loaded.Notes.Should().Be("checked");
     }

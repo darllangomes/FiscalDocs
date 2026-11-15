@@ -12,6 +12,7 @@ public class CpfMaskerTests
     [TestCase("123.456.789-09", "***.456.789-**")]
     public void Mask_ValidCpf_KeepsOnlyMiddleSixDigits(string input, string expected)
     {
+        // Act & Assert
         CpfMasker.Mask(input).Should().Be(expected);
     }
 
@@ -26,8 +27,10 @@ public class CpfMaskerTests
     [TestCase("11222333000181")]   // CNPJ is not a CPF
     public void Mask_NotACpf_ReturnsFullMaskAndNeverEchoesInput(string? input)
     {
+        // Act
         var result = CpfMasker.Mask(input);
 
+        // Assert
         result.Should().Be("***");
     }
 }

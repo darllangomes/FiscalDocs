@@ -62,8 +62,10 @@ public class DocumentsEndpointTests
     [TestCase("cte-cnpj-alfanumerico.xml")]
     public async Task Post_NewDocument_Returns201WithLocationAndId(string file)
     {
+        // Act
         var response = await PostAsync(SampleFiles.ReadAllText(file));
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var id = await IdOfAsync(response);
         response.Headers.Location!.ToString().Should().Be($"/api/v1/documents/{id}");
@@ -73,14 +75,17 @@ public class DocumentsEndpointTests
     [Test]
     public async Task Post_XmlWithUtf8Bom_Returns201()
     {
+        // Arrange
         var bytes = Encoding.UTF8.GetPreamble()
             .Concat(Encoding.UTF8.GetBytes(SampleFiles.ReadAllText("nfe-cnpj-numerico.xml")))
             .ToArray();
         var content = new ByteArrayContent(bytes);
         content.Headers.ContentType = new MediaTypeHeaderValue("application/xml");
 
+        // Act
         var response = await _client.PostAsync(Route, content);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
@@ -89,11 +94,14 @@ public class DocumentsEndpointTests
     [Test]
     public async Task Post_SameDocumentTwice_Returns200WithSameId()
     {
+        // Arrange
         var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
-
         var first = await PostAsync(xml);
+
+        // Act
         var second = await PostAsync(xml);
 
+        // Assert
         first.StatusCode.Should().Be(HttpStatusCode.Created);
         second.StatusCode.Should().Be(HttpStatusCode.OK);
         (await IdOfAsync(second)).Should().Be(await IdOfAsync(first));
@@ -103,11 +111,14 @@ public class DocumentsEndpointTests
     [Test]
     public async Task Post_SameKeyWithDifferentContent_Returns409()
     {
+        // Arrange
         var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
         await PostAsync(xml);
 
+        // Act
         var response = await PostAsync(xml + "\n");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         response.Content.Headers.ContentType!.MediaType.Should().Be(ProblemJson);
         (await CountAllAsync()).Should().Be(1);
@@ -116,6 +127,7 @@ public class DocumentsEndpointTests
     [Test]
     public async Task Post_SameKeyAsDeletedDocument_Returns409()
     {
+        // Arrange
         var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
         var id = await IdOfAsync(await PostAsync(xml));
         await using (var context = PostgresFixture.CreateContext())
@@ -125,8 +137,10 @@ public class DocumentsEndpointTests
             await context.SaveChangesAsync();
         }
 
+        // Act
         var response = await PostAsync(xml);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await CountAllAsync()).Should().Be(1);
     }
@@ -134,13 +148,16 @@ public class DocumentsEndpointTests
     [Test]
     public async Task Post_TwentyConcurrentUploadsOfTheSameDocument_CreatesExactlyOne()
     {
+        // Arrange
         var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
-
         var responses = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => PostAsync(xml)));
-
         responses.Count(r => r.StatusCode == HttpStatusCode.Created).Should().Be(1);
         responses.Count(r => r.StatusCode == HttpStatusCode.OK).Should().Be(19);
+
+        // Act
         var ids = await Task.WhenAll(responses.Select(IdOfAsync));
+
+        // Assert
         ids.Distinct().Should().ContainSingle();
         (await CountAllAsync()).Should().Be(1);
     }
@@ -151,8 +168,10 @@ public class DocumentsEndpointTests
     [TestCase("malicioso-xxe.xml")]
     public async Task Post_MalformedOrMaliciousXml_Returns422(string file)
     {
+        // Act
         var response = await PostAsync(SampleFiles.ReadAllText(file));
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         response.Content.Headers.ContentType!.MediaType.Should().Be(ProblemJson);
         (await CountAllAsync()).Should().Be(0);
@@ -161,32 +180,40 @@ public class DocumentsEndpointTests
     [Test]
     public async Task Post_UnsupportedDocumentType_Returns422()
     {
+        // Act
         var response = await PostAsync("<CompNfse/>");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Test]
     public async Task Post_EmptyBody_Returns422()
     {
+        // Act
         var response = await PostAsync("");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Test]
     public async Task Post_UnsupportedContentType_Returns415()
     {
+        // Act
         var response = await PostAsync("{}", "application/json");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.UnsupportedMediaType);
     }
 
     [Test]
     public async Task Post_BodyOverTheSizeLimit_Returns413()
     {
+        // Act
         var response = await PostAsync("<a>" + new string('x', 2_100_000) + "</a>");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
         (await CountAllAsync()).Should().Be(0);
     }

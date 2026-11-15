@@ -50,13 +50,15 @@ public class GetDocumentEndpointTests
     [Test]
     public async Task ExistingDocument_Returns200WithDocumentFields()
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await _client.GetAsync($"{Route}/{id}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
-
         doc.GetProperty("id").GetGuid().Should().Be(id);
         doc.GetProperty("type").GetString().Should().Be("NFe");
         doc.GetProperty("status").GetString().Should().Be("Received");
@@ -76,11 +78,14 @@ public class GetDocumentEndpointTests
     [Test]
     public async Task ExistingDocument_DoesNotExposeRawXml()
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await _client.GetAsync($"{Route}/{id}");
-        var body = await response.Content.ReadAsStringAsync();
 
+        // Assert
+        var body = await response.Content.ReadAsStringAsync();
         using var json = JsonDocument.Parse(body);
         json.RootElement.TryGetProperty("rawXml", out _).Should().BeFalse();
         body.Should().NotContain("<?xml");
@@ -89,11 +94,14 @@ public class GetDocumentEndpointTests
     [Test]
     public async Task ExistingDocument_ReturnsStrongQuotedEtag_StableAcrossReads()
     {
+        // Arrange
         var id = await IngestSampleAsync();
-
         var first = await _client.GetAsync($"{Route}/{id}");
+
+        // Act
         var second = await _client.GetAsync($"{Route}/{id}");
 
+        // Assert
         first.Headers.ETag.Should().NotBeNull();
         first.Headers.ETag!.IsWeak.Should().BeFalse();
         first.Headers.ETag.Tag.Should().MatchRegex("^\"[^\"]+\"$");
@@ -103,8 +111,10 @@ public class GetDocumentEndpointTests
     [Test]
     public async Task UnknownId_Returns404ProblemDetails()
     {
+        // Act
         var response = await _client.GetAsync($"{Route}/{Guid.NewGuid()}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
     }
@@ -112,6 +122,7 @@ public class GetDocumentEndpointTests
     [Test]
     public async Task SoftDeletedDocument_Returns404()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         await using (var context = PostgresFixture.CreateContext())
         {
@@ -120,8 +131,10 @@ public class GetDocumentEndpointTests
             await context.SaveChangesAsync();
         }
 
+        // Act
         var response = await _client.GetAsync($"{Route}/{id}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -129,19 +142,24 @@ public class GetDocumentEndpointTests
     [TestCase("123")]
     public async Task MalformedId_Returns404(string id)
     {
+        // Act
         var response = await _client.GetAsync($"{Route}/{id}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Test]
     public async Task WithoutApiKey_Returns401()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         using var anonymous = _factory.CreateClient();
 
+        // Act
         var response = await anonymous.GetAsync($"{Route}/{id}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

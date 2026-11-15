@@ -22,10 +22,13 @@ public class ApiKeyAuthenticationTests
     [Test]
     public async Task MissingKey_Returns401ProblemDetails()
     {
+        // Arrange
         using var client = _factory.CreateClient();
 
+        // Act
         var response = await client.PostAsync(Route, EmptyXml());
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
     }
@@ -36,34 +39,43 @@ public class ApiKeyAuthenticationTests
     [TestCase("TEST-API-KEY-NOT-A-SECRET")] // comparison is case-sensitive
     public async Task InvalidKey_Returns401(string key)
     {
+        // Arrange
         using var client = _factory.CreateClient();
         client.DefaultRequestHeaders.TryAddWithoutValidation(ApiFactory.ApiKeyHeader, key);
 
+        // Act
         var response = await client.PostAsync(Route, EmptyXml());
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Test]
     public async Task InvalidKey_ResponseNeverContainsTheExpectedKey()
     {
+        // Arrange
         using var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add(ApiFactory.ApiKeyHeader, "wrong-key");
 
+        // Act
         var response = await client.PostAsync(Route, EmptyXml());
-        var body = await response.Content.ReadAsStringAsync();
 
+        // Assert
+        var body = await response.Content.ReadAsStringAsync();
         body.Should().NotContain(ApiFactory.TestApiKey);
     }
 
     [Test]
     public async Task ValidKey_PassesAuthentication()
     {
+        // Arrange
         using var client = _factory.CreateAuthenticatedClient();
 
+        // Act
         // Empty body: reaches the handler and fails validation (422), without touching the database.
         var response = await client.PostAsync(Route, EmptyXml());
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
@@ -71,10 +83,13 @@ public class ApiKeyAuthenticationTests
     [TestCase("   ")]
     public void MissingConfiguration_FailsAtStartup(string configuredKey)
     {
+        // Arrange
         using var factory = new ApiFactory(configuredKey);
 
+        // Act
         var act = () => factory.CreateClient();
 
+        // Assert
         act.Should().Throw<Exception>().Which.Message.Should().Contain("Auth:ApiKey");
     }
 }
