@@ -32,6 +32,8 @@ updates:
       - dependency-name: "MediatR"
       - dependency-name: "AutoMapper"
       - dependency-name: "MassTransit*"
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
