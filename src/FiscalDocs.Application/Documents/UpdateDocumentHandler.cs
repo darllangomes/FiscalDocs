@@ -19,7 +19,8 @@ public sealed class UpdateDocumentHandler(IFiscalDocumentRepository repository, 
                     now),
                 cancellationToken);
         }
-        catch (ArgumentException ex)        {
+        catch (ArgumentException ex)
+        {
             return new UpdateDocumentResult(UpdateDocumentOutcome.Invalid, Error: ex.Message);
         }
     }
