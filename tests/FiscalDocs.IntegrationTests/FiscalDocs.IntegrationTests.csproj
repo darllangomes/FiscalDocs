@@ -22,6 +22,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\FiscalDocs.Domain\FiscalDocs.Domain.csproj" />
     <ProjectReference Include="..\..\src\FiscalDocs.Infrastructure\FiscalDocs.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\FiscalDocs.Api\FiscalDocs.Api.csproj" />
+   <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <Content Include="..\..\samples\*.xml" Link="samples\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" /> 
   </ItemGroup>
 
 </Project>

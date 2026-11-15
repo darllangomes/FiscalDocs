@@ -9,7 +9,7 @@ public class PostgresFixture
 {
     private static PostgreSqlContainer? _container;
 
-    private static string ConnectionString =>
+    public static string ConnectionString =>
         _container?.GetConnectionString()
         ?? throw new InvalidOperationException("Postgres container is not started.");
 
