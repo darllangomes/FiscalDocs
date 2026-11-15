@@ -48,5 +48,5 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         client.DefaultRequestHeaders.Add(ApiKeyHeader, TestApiKey);
         return client;
     }
-        
+
 }

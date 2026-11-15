@@ -23,7 +23,8 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
         {
             await _context.SaveChangesAsync(cancellationToken);
             return true;
-        }catch(DbUpdateException ex) when (IsAccessKeyViolation(ex))
+        }
+        catch (DbUpdateException ex) when (IsAccessKeyViolation(ex))
         {
             _context.Entry(document).State = EntityState.Detached;
             return false;
@@ -32,10 +33,10 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
 
     public Task<FiscalDocument?> FindByAccessKeyAsync(AccessKey accessKey, CancellationToken cancellationToken)
     {
-       return  _context.Documents
-        .IgnoreQueryFilters()
-        .AsNoTracking()
-        .FirstOrDefaultAsync(d => d.AccessKey == accessKey, cancellationToken);
+        return _context.Documents
+         .IgnoreQueryFilters()
+         .AsNoTracking()
+         .FirstOrDefaultAsync(d => d.AccessKey == accessKey, cancellationToken);
     }
 
     private static bool IsAccessKeyViolation(DbUpdateException ex) =>
