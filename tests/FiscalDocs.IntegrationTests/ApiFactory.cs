@@ -18,11 +18,18 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     private readonly int _permitLimit;
     private readonly int _windowSeconds;
 
-    public ApiFactory(string apiKey = TestApiKey, int permitLimit = DefaultPermitLimit, int windowSeconds = 60)
+    private readonly string? _connectionString;
+
+    public ApiFactory(
+        string apiKey = TestApiKey,
+        int permitLimit = DefaultPermitLimit,
+        int windowSeconds = 60,
+        string? connectionString = null)
     {
         _apiKey = apiKey;
         _permitLimit = permitLimit;
         _windowSeconds = windowSeconds;
+        _connectionString = connectionString;
     }
 
     public CapturingLoggerProvider Logs { get; } = new();
@@ -36,7 +43,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             logging.AddFilter<CapturingLoggerProvider>(null, LogLevel.Trace);
         });
 
-        builder.UseSetting("ConnectionStrings:Default", PostgresFixture.ConnectionString);
+        builder.UseSetting("ConnectionStrings:Default", _connectionString ?? PostgresFixture.ConnectionString);
         builder.UseSetting("Auth:ApiKey", _apiKey);
         builder.UseSetting("RateLimiting:PermitLimit", _permitLimit.ToString());
         builder.UseSetting("RateLimiting:WindowSeconds", _windowSeconds.ToString());
