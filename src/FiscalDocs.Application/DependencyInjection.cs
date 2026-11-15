@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<GetDocumentHandler>();
         services.AddScoped<ListDocumentsHandler>();
         services.AddScoped<UpdateDocumentHandler>();
+        services.AddScoped<DeleteDocumentHandler>();
 
         return services;
     }

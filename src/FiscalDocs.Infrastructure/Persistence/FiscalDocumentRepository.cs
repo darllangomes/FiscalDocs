@@ -112,6 +112,34 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
         return new UpdateDocumentResult(UpdateDocumentOutcome.Updated, details);
     }
 
+    public async Task<DeleteDocumentOutcome> DeleteAsync(
+        Guid id, uint? expectedVersion, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var document = await _context.Documents.FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+        if (document is null)
+        {
+            return DeleteDocumentOutcome.NotFound;
+        }
+
+        document.MarkAsDeleted(now);
+        if (expectedVersion is { } version)
+        {
+            _context.Entry(document).Property<uint>("xmin").OriginalValue = version;
+        }
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _context.Entry(document).State = EntityState.Detached;
+            return DeleteDocumentOutcome.PreconditionFailed;
+        }
+
+        return DeleteDocumentOutcome.Deleted;
+    }
+
     private static bool IsAccessKeyViolation(DbUpdateException ex) =>
     ex.InnerException is PostgresException
     {
