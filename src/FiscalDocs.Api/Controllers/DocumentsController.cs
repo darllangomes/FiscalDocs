@@ -17,13 +17,18 @@ public sealed class DocumentsController : ControllerBase
     private readonly IngestDocumentHandler _ingestHandler;
     private readonly GetDocumentHandler _getHandler;
     private readonly ListDocumentsHandler _listHandler;
+    private readonly UpdateDocumentHandler _updateHandler;
 
     public DocumentsController(
-        IngestDocumentHandler ingestHandler, GetDocumentHandler getHandler, ListDocumentsHandler listHandler)
+        IngestDocumentHandler ingestHandler,
+        GetDocumentHandler getHandler,
+        ListDocumentsHandler listHandler,
+        UpdateDocumentHandler updateHandler)
     {
         _ingestHandler = ingestHandler;
         _getHandler = getHandler;
         _listHandler = listHandler;
+        _updateHandler = updateHandler;
     }
 
     [HttpGet]
@@ -54,6 +59,76 @@ public sealed class DocumentsController : ControllerBase
 
         Response.Headers.ETag = $"\"{document.Version}\"";
         return Ok(DocumentResponse.From(document));
+    }
+
+    [HttpPatch("{id:guid}")]
+    [Consumes("application/json")]
+    [ProducesResponseType<DocumentResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status415UnsupportedMediaType)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status428PreconditionRequired)]
+    public async Task<IActionResult> Patch(
+        Guid id, [FromBody] PatchDocumentRequest request, CancellationToken cancellationToken)
+    {
+        if (await _getHandler.HandleAsync(id, cancellationToken) is null)
+        {
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Document not found.");
+        }
+
+        var ifMatch = Request.Headers.IfMatch.ToString();
+        if (string.IsNullOrEmpty(ifMatch))
+        {
+            return Problem(
+                statusCode: StatusCodes.Status428PreconditionRequired,
+                title: "Precondition required.",
+                detail: "The If-Match header is required.");
+        }
+
+        if (!TryParseStrongEtag(ifMatch, out var expectedVersion))
+        {
+            return PreconditionFailedProblem();
+        }
+
+        var command = request.ToCommand(id, expectedVersion, ModelState);
+        if (command is null)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var result = await _updateHandler.HandleAsync(command, cancellationToken);
+        switch (result.Outcome)
+        {
+            case UpdateDocumentOutcome.Updated:
+                Response.Headers.ETag = $"\"{result.Details!.Version}\"";
+                return Ok(DocumentResponse.From(result.Details));
+            case UpdateDocumentOutcome.NotFound:
+                return Problem(statusCode: StatusCodes.Status404NotFound, title: "Document not found.");
+            case UpdateDocumentOutcome.PreconditionFailed:
+                return PreconditionFailedProblem();
+            case UpdateDocumentOutcome.Invalid:
+                return Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "Invalid request.",
+                    detail: result.Error);
+            default:
+                throw new InvalidOperationException($"Unexpected outcome `{result.Outcome}`");
+        }
+    }
+
+    private ObjectResult PreconditionFailedProblem() => Problem(
+        statusCode: StatusCodes.Status412PreconditionFailed,
+        title: "Precondition failed.",
+        detail: "The If-Match value does not match the current version of the document.");
+
+    private static bool TryParseStrongEtag(string value, out uint version)
+    {
+        version = 0;
+        return value.Length > 2
+            && value[0] == '"'
+            && value[^1] == '"'
+            && uint.TryParse(value.AsSpan(1, value.Length - 2), out version);
     }
 
     [HttpPost]

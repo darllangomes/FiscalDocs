@@ -17,4 +17,12 @@ public interface IFiscalDocumentRepository
 
     /// <summary>Filtered, paged summaries, newest issue date first; excludes soft-deleted documents.</summary>
     Task<PagedResult<DocumentSummary>> ListAsync(ListDocumentsQuery query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Loads the document (soft-deleted excluded), runs <paramref name="apply"/> on it and saves,
+    /// returning PreconditionFailed when the stored version differs from <paramref name="expectedVersion"/>.
+    /// Exceptions thrown by <paramref name="apply"/> propagate and nothing is saved.
+    /// </summary>
+    Task<UpdateDocumentResult> UpdateAsync(
+        Guid id, uint expectedVersion, Action<FiscalDocument> apply, CancellationToken cancellationToken);
 }
