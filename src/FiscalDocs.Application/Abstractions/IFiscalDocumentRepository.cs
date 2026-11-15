@@ -25,4 +25,8 @@ public interface IFiscalDocumentRepository
     /// </summary>
     Task<UpdateDocumentResult> UpdateAsync(
         Guid id, uint expectedVersion, Action<FiscalDocument> apply, CancellationToken cancellationToken);
+
+    /// <summary>Soft-deletes the document; the version is checked only when <paramref name="expectedVersion"/> is given.</summary>
+    Task<DeleteDocumentOutcome> DeleteAsync(
+        Guid id, uint? expectedVersion, DateTimeOffset now, CancellationToken cancellationToken);
 }

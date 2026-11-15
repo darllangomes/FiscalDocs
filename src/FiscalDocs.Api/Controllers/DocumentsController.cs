@@ -18,17 +18,20 @@ public sealed class DocumentsController : ControllerBase
     private readonly GetDocumentHandler _getHandler;
     private readonly ListDocumentsHandler _listHandler;
     private readonly UpdateDocumentHandler _updateHandler;
+    private readonly DeleteDocumentHandler _deleteHandler;
 
     public DocumentsController(
         IngestDocumentHandler ingestHandler,
         GetDocumentHandler getHandler,
         ListDocumentsHandler listHandler,
-        UpdateDocumentHandler updateHandler)
+        UpdateDocumentHandler updateHandler,
+        DeleteDocumentHandler deleteHandler)
     {
         _ingestHandler = ingestHandler;
         _getHandler = getHandler;
         _listHandler = listHandler;
         _updateHandler = updateHandler;
+        _deleteHandler = deleteHandler;
     }
 
     [HttpGet]
@@ -115,6 +118,39 @@ public sealed class DocumentsController : ControllerBase
             default:
                 throw new InvalidOperationException($"Unexpected outcome `{result.Outcome}`");
         }
+    }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        if (await _getHandler.HandleAsync(id, cancellationToken) is null)
+        {
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Document not found.");
+        }
+
+        uint? expectedVersion = null;
+        var ifMatch = Request.Headers.IfMatch.ToString();
+        if (!string.IsNullOrEmpty(ifMatch))
+        {
+            if (!TryParseStrongEtag(ifMatch, out var version))
+            {
+                return PreconditionFailedProblem();
+            }
+
+            expectedVersion = version;
+        }
+
+        return await _deleteHandler.HandleAsync(id, expectedVersion, cancellationToken) switch
+        {
+            DeleteDocumentOutcome.Deleted => NoContent(),
+            DeleteDocumentOutcome.NotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound, title: "Document not found."),
+            DeleteDocumentOutcome.PreconditionFailed => PreconditionFailedProblem(),
+            _ => throw new InvalidOperationException("Unexpected delete outcome.")
+        };
     }
 
     private ObjectResult PreconditionFailedProblem() => Problem(
