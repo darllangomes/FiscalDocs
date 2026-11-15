@@ -28,8 +28,10 @@ public class ApiSmokeTests
     [Test]
     public async Task UnknownRoute_ReturnsProblemDetails()
     {
+        // Act
         var response = await _client.GetAsync("/does-not-exist");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
     }
@@ -37,10 +39,13 @@ public class ApiSmokeTests
     [Test]
     public void IngestHandler_ResolvesFromTheContainer()
     {
+        // Arrange
         using var scope = _factory.Services.CreateScope();
 
+        // Act
         var handler = scope.ServiceProvider.GetService<IngestDocumentHandler>();
 
+        // Assert
         handler.Should().NotBeNull();
     }
 }

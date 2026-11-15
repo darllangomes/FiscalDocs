@@ -56,32 +56,39 @@ public class FiscalDocumentRepositoryTests
     [Test]
     public async Task TryAdd_NewDocument_ReturnsTrueAndPersists()
     {
+        // Act & Assert
         (await TryAddAsync(Build())).Should().BeTrue();
-
         (await CountAllAsync()).Should().Be(1);
     }
 
     [Test]
     public async Task TryAdd_SameAccessKeyFromAnotherContext_ReturnsFalse()
     {
+        // Arrange
         await TryAddAsync(Build());
 
-        (await TryAddAsync(Build())).Should().BeFalse();
+        // Act
+        var added = await TryAddAsync(Build());
 
+        // Assert
+        added.Should().BeFalse();
         (await CountAllAsync()).Should().Be(1);
     }
 
     [Test]
     public async Task TryAdd_DuplicateInSameContext_ReturnsFalseAndContextStaysUsable()
     {
+        // Arrange
         await using var context = PostgresFixture.CreateContext();
         var repository = new FiscalDocumentRepository(context);
         var first = Build();
         await repository.TryAddAsync(first, CancellationToken.None);
 
+        // Act
         var added = await repository.TryAddAsync(Build(), CancellationToken.None);
         var found = await repository.FindByAccessKeyAsync(first.AccessKey, CancellationToken.None);
 
+        // Assert
         added.Should().BeFalse();
         found.Should().NotBeNull();
         found!.Id.Should().Be(first.Id);
@@ -92,9 +99,11 @@ public class FiscalDocumentRepositoryTests
     [Test]
     public async Task TryAdd_ConcurrentUploadsOfSameKey_ExactlyOneSucceeds()
     {
+        // Act
         var results = await Task.WhenAll(
             Enumerable.Range(0, 20).Select(_ => Task.Run(() => TryAddAsync(Build()))));
 
+        // Assert
         results.Count(succeeded => succeeded).Should().Be(1);
         (await CountAllAsync()).Should().Be(1);
     }
@@ -104,11 +113,14 @@ public class FiscalDocumentRepositoryTests
     [Test]
     public async Task Find_ExistingDocument_ReturnsIt()
     {
+        // Arrange
         var document = Build();
         await TryAddAsync(document);
 
+        // Act
         var found = await FindAsync(NFeKey);
 
+        // Assert
         found.Should().NotBeNull();
         found!.Id.Should().Be(document.Id);
     }
@@ -116,12 +128,15 @@ public class FiscalDocumentRepositoryTests
     [Test]
     public async Task Find_SoftDeletedDocument_StillReturnsIt()
     {
+        // Arrange
         var document = Build();
         document.MarkAsDeleted(Now.AddMinutes(1));
         await TryAddAsync(document);
 
+        // Act
         var found = await FindAsync(NFeKey);
 
+        // Assert
         found.Should().NotBeNull();
         found!.IsDeleted.Should().BeTrue();
     }
@@ -129,6 +144,7 @@ public class FiscalDocumentRepositoryTests
     [Test]
     public async Task Find_UnknownKey_ReturnsNull()
     {
+        // Act & Assert
         (await FindAsync(NFeKey)).Should().BeNull();
     }
 }

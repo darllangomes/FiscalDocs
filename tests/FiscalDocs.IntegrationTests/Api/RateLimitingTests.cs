@@ -26,9 +26,12 @@ public class RateLimitingTests
     [Test]
     public async Task RequestsWithinLimit_AreNotRejected()
     {
+        // Arrange
         using var factory = CreateFactory();
+
         using var client = factory.CreateAuthenticatedClient();
 
+        // Act & Assert
         for (var i = 0; i < Limit; i++)
         {
             // Corpo vazio chega ao handler (422) sem tocar no banco.
@@ -41,27 +44,32 @@ public class RateLimitingTests
     [Test]
     public async Task RequestBeyondLimit_Returns429()
     {
+        // Arrange
         using var factory = CreateFactory();
         using var client = factory.CreateAuthenticatedClient();
 
+        // Act
         var response = await ExceedLimitAsync(client);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
     }
 
     [Test]
     public async Task RejectedRequest_ReturnsProblemDetailsWithRetryAfter()
     {
+        // Arrange
         using var factory = CreateFactory();
         using var client = factory.CreateAuthenticatedClient();
 
+        // Act
         var response = await ExceedLimitAsync(client);
 
+        // Assert
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
         response.Headers.RetryAfter.Should().NotBeNull();
         response.Headers.RetryAfter!.Delta!.Value.Should()
             .BeGreaterThan(TimeSpan.Zero).And.BeLessThanOrEqualTo(TimeSpan.FromSeconds(60));
-
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         body.RootElement.GetProperty("status").GetInt32().Should().Be(429);
     }
@@ -69,19 +77,21 @@ public class RateLimitingTests
     [Test]
     public async Task FailedAuthenticationAttempts_CountTowardTheLimit()
     {
+        // Arrange
         using var factory = CreateFactory();
         using var attacker = factory.CreateClient();
         attacker.DefaultRequestHeaders.Add(ApiFactory.ApiKeyHeader, "wrong-key");
-
         for (var i = 0; i < Limit; i++)
         {
             var failed = await attacker.PostAsync(Route, EmptyXml());
             failed.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
-
         using var legit = factory.CreateAuthenticatedClient();
+
+        // Act
         var response = await legit.PostAsync(Route, EmptyXml());
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
     }
 }

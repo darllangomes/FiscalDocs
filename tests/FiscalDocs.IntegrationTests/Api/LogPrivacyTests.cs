@@ -62,8 +62,10 @@ public class LogPrivacyTests
     [Test]
     public async Task SuccessfulIngestion_DoesNotLogCpfOrXml()
     {
+        // Act
         var response = await PostAsync(SampleWithCpf());
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         AssertNothingSensitiveWasLogged();
     }
@@ -71,11 +73,16 @@ public class LogPrivacyTests
     [Test]
     public async Task DuplicateIngestion_DoesNotLogCpfOrXml()
     {
+        // Arrange
         var xml = SampleWithCpf();
 
-        (await PostAsync(xml)).StatusCode.Should().Be(HttpStatusCode.Created);
-        (await PostAsync(xml)).StatusCode.Should().Be(HttpStatusCode.OK);
+        // Act
+        var first = await PostAsync(xml);
+        var second = await PostAsync(xml);
 
+        // Assert
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+        second.StatusCode.Should().Be(HttpStatusCode.OK);
         AssertNothingSensitiveWasLogged();
     }
 
@@ -83,8 +90,10 @@ public class LogPrivacyTests
     public async Task RejectedDocument_DoesNotLogCpfOrXml()
     {
         // XML malformado (dois elementos raiz), mas ainda com o CPF no corpo.
+        // Act
         var response = await PostAsync(SampleWithCpf() + "<oops>");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         _factory.Logs.Entries.Should().Contain(e => e.Contains("Request rejected"),
             "prova que a captura enxerga os logs da própria aplicação");

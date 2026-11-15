@@ -65,13 +65,16 @@ public class IngestDocumentHandlerTests
     [TestCase("cte-cnpj-alfanumerico.xml")]
     public async Task Handle_NewDocument_PersistsAndReturnsCreated(string file)
     {
+        // Arrange
         var xml = SampleFiles.ReadAllText(file);
         FiscalDocument? saved = null;
         _repository.TryAddAsync(Arg.Do<FiscalDocument>(d => saved = d), Arg.Any<CancellationToken>())
             .Returns(true);
 
+        // Act
         var result = await _handler.HandleAsync(xml, CancellationToken.None);
 
+        // Assert
         result.Outcome.Should().Be(IngestOutcome.Created);
         saved.Should().NotBeNull();
         result.DocumentId.Should().Be(saved!.Id);
@@ -82,12 +85,15 @@ public class IngestDocumentHandlerTests
     [Test]
     public async Task Handle_NFeSample_MapsParsedFieldsToTheEntity()
     {
+        // Arrange
         FiscalDocument? saved = null;
         _repository.TryAddAsync(Arg.Do<FiscalDocument>(d => saved = d), Arg.Any<CancellationToken>())
             .Returns(true);
 
+        // Act
         await _handler.HandleAsync(SampleFiles.ReadAllText("nfe-cnpj-numerico.xml"), CancellationToken.None);
 
+        // Assert
         saved!.Type.Should().Be(FiscalDocs.Domain.Enums.DocumentType.NFe);
         saved.AccessKey.Value.Should().Be("26260811222333000181550010000010011123456782");
         saved.Number.Should().Be("1001");
@@ -100,8 +106,10 @@ public class IngestDocumentHandlerTests
     [Test]
     public async Task Handle_NewDocument_DoesNotQueryBeforeInserting()
     {
+        // Act
         await _handler.HandleAsync(SampleFiles.ReadAllText("nfe-cnpj-numerico.xml"), CancellationToken.None);
 
+        // Assert
         await _repository.DidNotReceive()
             .FindByAccessKeyAsync(Arg.Any<AccessKey>(), Arg.Any<CancellationToken>());
     }
@@ -111,12 +119,15 @@ public class IngestDocumentHandlerTests
     [Test]
     public async Task Handle_SameKeyAndSameContent_ReturnsAlreadyExistsWithExistingId()
     {
+        // Arrange
         var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
         var existing = ExistingFrom(xml);
         DuplicateOf(existing);
 
+        // Act
         var result = await _handler.HandleAsync(xml, CancellationToken.None);
 
+        // Assert
         result.Outcome.Should().Be(IngestOutcome.AlreadyExists);
         result.DocumentId.Should().Be(existing.Id);
     }
@@ -124,12 +135,15 @@ public class IngestDocumentHandlerTests
     [Test]
     public async Task Handle_SameKeyAndDifferentContent_ReturnsContentMismatch()
     {
+        // Arrange
         var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
         var existing = ExistingFrom(xml, rawXml: xml + "\n");
         DuplicateOf(existing);
 
+        // Act
         var result = await _handler.HandleAsync(xml, CancellationToken.None);
 
+        // Assert
         result.Outcome.Should().Be(IngestOutcome.ContentMismatch);
         result.DocumentId.Should().Be(existing.Id);
     }
@@ -138,13 +152,16 @@ public class IngestDocumentHandlerTests
     [TestCase(false)]
     public async Task Handle_SameKeyAsDeletedDocument_ReturnsDeletedDocument(bool sameContent)
     {
+        // Arrange
         var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
         var existing = ExistingFrom(xml, rawXml: sameContent ? xml : xml + "\n");
         existing.MarkAsDeleted(Now.AddMinutes(1));
         DuplicateOf(existing);
 
+        // Act
         var result = await _handler.HandleAsync(xml, CancellationToken.None);
 
+        // Assert
         result.Outcome.Should().Be(IngestOutcome.DeletedDocument);
         result.DocumentId.Should().Be(existing.Id);
     }
@@ -152,13 +169,16 @@ public class IngestDocumentHandlerTests
     [Test]
     public async Task Handle_DuplicateReportedButNotFound_ThrowsInvalidOperationException()
     {
+        // Arrange
         _repository.TryAddAsync(Arg.Any<FiscalDocument>(), Arg.Any<CancellationToken>()).Returns(false);
         _repository.FindByAccessKeyAsync(Arg.Any<AccessKey>(), Arg.Any<CancellationToken>())
             .Returns((FiscalDocument?)null);
 
+        // Act
         var act = () => _handler.HandleAsync(
             SampleFiles.ReadAllText("nfe-cnpj-numerico.xml"), CancellationToken.None);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
@@ -168,8 +188,10 @@ public class IngestDocumentHandlerTests
     [TestCase("   ")]
     public async Task Handle_BlankXml_ThrowsInvalidDocumentException(string xml)
     {
+        // Act
         var act = () => _handler.HandleAsync(xml, CancellationToken.None);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidDocumentException>();
         _loader.DidNotReceive().Load(Arg.Any<string>());
     }
@@ -177,10 +199,13 @@ public class IngestDocumentHandlerTests
     [Test]
     public async Task Handle_LoaderRejectsXml_PropagatesAndNeverPersists()
     {
+        // Arrange
         _loader.Load(Arg.Any<string>()).Returns(_ => throw new InvalidDocumentException("bad xml"));
 
+        // Act
         var act = () => _handler.HandleAsync("<x/>", CancellationToken.None);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidDocumentException>();
         await _repository.DidNotReceive()
             .TryAddAsync(Arg.Any<FiscalDocument>(), Arg.Any<CancellationToken>());
@@ -189,8 +214,10 @@ public class IngestDocumentHandlerTests
     [Test]
     public async Task Handle_UnsupportedDocumentType_ThrowsInvalidDocumentException()
     {
+        // Act
         var act = () => _handler.HandleAsync("<CompNfse/>", CancellationToken.None);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidDocumentException>();
         await _repository.DidNotReceive()
             .TryAddAsync(Arg.Any<FiscalDocument>(), Arg.Any<CancellationToken>());
@@ -199,11 +226,14 @@ public class IngestDocumentHandlerTests
     [Test]
     public async Task Handle_XmlViolatingEntityRules_ThrowsInvalidDocumentException()
     {
+        // Arrange
         // The parser accepts "PEX", but the entity requires a two-letter state.
         var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml").Replace("<UF>PE</UF>", "<UF>PEX</UF>");
 
+        // Act
         var act = () => _handler.HandleAsync(xml, CancellationToken.None);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidDocumentException>();
         await _repository.DidNotReceive()
             .TryAddAsync(Arg.Any<FiscalDocument>(), Arg.Any<CancellationToken>());

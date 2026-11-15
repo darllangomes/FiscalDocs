@@ -26,14 +26,17 @@ public class NFeParserTests
     [TestCase("cte-cnpj-alfanumerico.xml", false)]
     public void CanParse_ReturnsTrueOnlyForNFe(string file, bool expected)
     {
+        // Act & Assert
         _parser.CanParse(Load(file)).Should().Be(expected);
     }
 
     [Test]
     public void Parse_NFeWithNumericCnpj_ExtractsAllFields()
     {
+        // Act
         var result = _parser.Parse(Load("nfe-cnpj-numerico.xml"));
 
+        // Assert
         result.Should().BeEquivalentTo(new ParsedDocument(
             DocumentType.NFe,
             AccessKey.Parse("26260811222333000181550010000010011123456782"),
@@ -52,8 +55,10 @@ public class NFeParserTests
     [Test]
     public void Parse_NFeWithAlphanumericCnpj_ExtractsAllFields()
     {
+        // Act
         var result = _parser.Parse(Load("nfe-cnpj-alfanumerico.xml"));
 
+        // Assert
         result.Should().BeEquivalentTo(new ParsedDocument(
             DocumentType.NFe,
             AccessKey.Parse("26260812ABC34501DE35550010000020021234567895"),
@@ -72,10 +77,13 @@ public class NFeParserTests
     [Test]
     public void Parse_RootWithoutProtocolEnvelope_Works()
     {
+        // Arrange
         var withProtocol = Load("nfe-cnpj-numerico.xml");
+
         var nfeOnly = new XDocument(new XElement(
             withProtocol.Root!.Elements().First(e => e.Name.LocalName == "NFe")));
 
+        // Act & Assert
         _parser.CanParse(nfeOnly).Should().BeTrue();
         _parser.Parse(nfeOnly).Number.Should().Be("1001");
     }
@@ -83,33 +91,42 @@ public class NFeParserTests
     [Test]
     public void Parse_MissingIssuer_ThrowsInvalidDocumentException()
     {
+        // Arrange
         var document = Load("nfe-cnpj-numerico.xml");
         document.Descendants().Where(e => e.Name.LocalName == "emit").Remove();
 
+        // Act
         var act = () => _parser.Parse(document);
 
+        // Assert
         act.Should().Throw<InvalidDocumentException>();
     }
 
     [Test]
     public void Parse_InvalidTotalAmount_ThrowsInvalidDocumentException()
     {
+        // Arrange
         var document = Load("nfe-cnpj-numerico.xml");
         document.Descendants().Single(e => e.Name.LocalName == "vNF").Value = "abc";
 
+        // Act
         var act = () => _parser.Parse(document);
 
+        // Assert
         act.Should().Throw<InvalidDocumentException>();
     }
 
     [Test]
     public void Parse_WithoutRecipient_ReturnsNullRecipientFields()
     {
+        // Arrange
         var document = Load("nfe-cnpj-numerico.xml");
         document.Descendants().Where(e => e.Name.LocalName == "dest").Remove();
 
+        // Act
         var result = _parser.Parse(document);
 
+        // Assert
         result.RecipientDocument.Should().BeNull();
         result.RecipientName.Should().BeNull();
         result.RecipientState.Should().BeNull();
@@ -118,12 +135,15 @@ public class NFeParserTests
     [Test]
     public void Parse_IssuerCnpjDifferentFromAccessKey_ThrowsInvalidDocumentException()
     {
+        // Arrange
         var document = Load("nfe-cnpj-numerico.xml");
         document.Descendants().Single(e => e.Name.LocalName == "emit")
             .Elements().Single(e => e.Name.LocalName == "CNPJ").Value = "44555666000181";
 
+        // Act
         var act = () => _parser.Parse(document);
 
+        // Assert
         act.Should().Throw<InvalidDocumentException>();
     }
 }

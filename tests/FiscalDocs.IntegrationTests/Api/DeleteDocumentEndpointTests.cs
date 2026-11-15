@@ -70,10 +70,13 @@ public class DeleteDocumentEndpointTests
     [Test]
     public async Task ExistingDocument_Returns204WithNoBody()
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await DeleteAsync(id);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await response.Content.ReadAsStringAsync()).Should().BeEmpty();
     }
@@ -81,23 +84,29 @@ public class DeleteDocumentEndpointTests
     [Test]
     public async Task DeletedDocument_NoLongerAppearsInGet()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         (await DeleteAsync(id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
+        // Act
         var response = await _client.GetAsync($"{Route}/{id}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Test]
     public async Task DeletedDocument_NoLongerAppearsInList()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         await IngestSampleAsync("nfe-cnpj-alfanumerico.xml");
         (await DeleteAsync(id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
+        // Act
         var response = await _client.GetAsync(Route);
 
+        // Assert
         var list = await response.Content.ReadFromJsonAsync<JsonElement>();
         list.GetProperty("totalCount").GetInt32().Should().Be(1);
         list.GetProperty("items").EnumerateArray()
@@ -108,9 +117,14 @@ public class DeleteDocumentEndpointTests
     [Test]
     public async Task Delete_IsSoft_RowAndRawXmlRemainInDatabase()
     {
+        // Arrange
         var id = await IngestSampleAsync();
-        (await DeleteAsync(id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
+        // Act
+        var response = await DeleteAsync(id);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await using var context = PostgresFixture.CreateContext();
         var document = await context.Documents.IgnoreQueryFilters().SingleAsync(d => d.Id == id);
         document.IsDeleted.Should().BeTrue();
@@ -120,11 +134,15 @@ public class DeleteDocumentEndpointTests
     [Test]
     public async Task Delete_DoesNotAffectOtherDocuments()
     {
+        // Arrange
         var target = await IngestSampleAsync("nfe-cnpj-numerico.xml");
         var other = await IngestSampleAsync("nfe-cnpj-alfanumerico.xml");
 
-        (await DeleteAsync(target)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        // Act
+        var response = await DeleteAsync(target);
 
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await _client.GetAsync($"{Route}/{other}")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -133,41 +151,50 @@ public class DeleteDocumentEndpointTests
     [Test]
     public async Task SecondDelete_Returns404()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         (await DeleteAsync(id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
+        // Act
         var response = await DeleteAsync(id);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Test]
     public async Task ReingestingDeletedDocument_Returns409()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         (await DeleteAsync(id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-
         var content = new StringContent(
             SampleFiles.ReadAllText("nfe-cnpj-numerico.xml"), Encoding.UTF8, "application/xml");
+
+        // Act
         var response = await _client.PostAsync(Route, content);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Test]
     public async Task PatchAfterDelete_Returns404()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
         (await DeleteAsync(id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-
         var request = new HttpRequestMessage(HttpMethod.Patch, $"{Route}/{id}")
         {
             Content = new StringContent("""{"status":"Reviewed"}""", Encoding.UTF8, "application/json")
         };
         request.Headers.TryAddWithoutValidation("If-Match", etag);
+
+        // Act
         var response = await _client.SendAsync(request);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -176,11 +203,14 @@ public class DeleteDocumentEndpointTests
     [Test]
     public async Task MatchingIfMatch_Returns204()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
 
+        // Act
         var response = await DeleteAsync(id, etag);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await _client.GetAsync($"{Route}/{id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -188,6 +218,7 @@ public class DeleteDocumentEndpointTests
     [Test]
     public async Task StaleIfMatch_Returns412_AndKeepsDocument()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var stale = await GetEtagAsync(id);
         var patch = new HttpRequestMessage(HttpMethod.Patch, $"{Route}/{id}")
@@ -197,8 +228,10 @@ public class DeleteDocumentEndpointTests
         patch.Headers.TryAddWithoutValidation("If-Match", stale);
         (await _client.SendAsync(patch)).StatusCode.Should().Be(HttpStatusCode.OK);
 
+        // Act
         var response = await DeleteAsync(id, stale);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
         (await _client.GetAsync($"{Route}/{id}")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -206,11 +239,14 @@ public class DeleteDocumentEndpointTests
     [Test]
     public async Task WeakIfMatch_Returns412_AndKeepsDocument()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
 
+        // Act
         var response = await DeleteAsync(id, $"W/{etag}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
         (await _client.GetAsync($"{Route}/{id}")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -221,10 +257,13 @@ public class DeleteDocumentEndpointTests
     [TestCase("*")]
     public async Task GarbageIfMatch_Returns412_AndKeepsDocument(string ifMatch)
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await DeleteAsync(id, ifMatch);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
         (await _client.GetAsync($"{Route}/{id}")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -234,8 +273,10 @@ public class DeleteDocumentEndpointTests
     [Test]
     public async Task UnknownId_Returns404ProblemDetails()
     {
+        // Act
         var response = await DeleteAsync(Guid.NewGuid());
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
     }
@@ -243,8 +284,10 @@ public class DeleteDocumentEndpointTests
     [Test]
     public async Task UnknownId_Returns404_EvenWithIfMatch()
     {
+        // Act
         var response = await DeleteAsync(Guid.NewGuid(), "\"123\"");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -252,19 +295,24 @@ public class DeleteDocumentEndpointTests
     [TestCase("123")]
     public async Task MalformedId_Returns404(string id)
     {
+        // Act
         var response = await _client.DeleteAsync($"{Route}/{id}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Test]
     public async Task WithoutApiKey_Returns401_AndKeepsDocument()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         using var anonymous = _factory.CreateClient();
 
+        // Act
         var response = await anonymous.DeleteAsync($"{Route}/{id}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         (await _client.GetAsync($"{Route}/{id}")).StatusCode.Should().Be(HttpStatusCode.OK);
     }

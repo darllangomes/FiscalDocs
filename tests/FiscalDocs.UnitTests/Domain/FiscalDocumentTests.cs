@@ -43,8 +43,10 @@ public class FiscalDocumentTests
     [Test]
     public void Create_ValidData_SetsInitialState()
     {
+        // Act
         var doc = Build();
 
+        // Assert
         doc.Id.Should().NotBeEmpty();
         doc.Type.Should().Be(DocumentType.NFe);
         doc.AccessKey.Value.Should().Be(NFeKey);
@@ -65,14 +67,17 @@ public class FiscalDocumentTests
     [Test]
     public void Create_TwoDocuments_HaveDifferentIds()
     {
+        // Act & Assert
         Build().Id.Should().NotBe(Build().Id);
     }
 
     [Test]
     public void Create_WithoutRecipient_KeepsRecipientFieldsNull()
     {
+        // Act
         var doc = Build(recipientDocument: null, recipientName: null, recipientState: null);
 
+        // Assert
         doc.RecipientDocument.Should().BeNull();
         doc.RecipientName.Should().BeNull();
         doc.RecipientState.Should().BeNull();
@@ -81,6 +86,7 @@ public class FiscalDocumentTests
     [Test]
     public void Create_LowercaseIssuerState_NormalizesToUppercase()
     {
+        // Act & Assert
         Build(issuerState: "pe").IssuerState.Should().Be("PE");
     }
 
@@ -89,6 +95,7 @@ public class FiscalDocumentTests
     [Test]
     public void Create_XmlHash_IsLowercaseSha256OfRawXml()
     {
+        // Act & Assert
         // SHA-256 of the UTF-8 bytes of "<a/>"
         Build(rawXml: "<a/>").XmlHash.Should()
             .Be("29114363f749a0226b6988dda3ca2492a954117ab6b5f382706c20300dabc079");
@@ -97,6 +104,7 @@ public class FiscalDocumentTests
     [Test]
     public void Create_DifferentXml_ProducesDifferentHash()
     {
+        // Act & Assert
         Build(rawXml: "<a/>").XmlHash.Should().NotBe(Build(rawXml: "<b/>").XmlHash);
     }
 
@@ -106,8 +114,10 @@ public class FiscalDocumentTests
     [TestCase(DocumentType.CTe, CTeKey)]
     public void Create_TypeMatchesAccessKeyModel_Succeeds(DocumentType type, string key)
     {
+        // Act
         var act = () => Build(type: type, key: key);
 
+        // Assert
         act.Should().NotThrow();
     }
 
@@ -115,16 +125,20 @@ public class FiscalDocumentTests
     [TestCase(DocumentType.CTe, NFeKey)]
     public void Create_TypeDoesNotMatchAccessKeyModel_ThrowsArgumentException(DocumentType type, string key)
     {
+        // Act
         var act = () => Build(type: type, key: key);
 
+        // Assert
         act.Should().Throw<ArgumentException>();
     }
 
     [Test]
     public void Create_IssuerCnpjDifferentFromAccessKey_ThrowsArgumentException()
     {
+        // Act
         var act = () => Build(issuerCnpj: "44555666000181");
 
+        // Assert
         act.Should().Throw<ArgumentException>();
     }
 
@@ -146,8 +160,10 @@ public class FiscalDocumentTests
     [TestCaseSource(nameof(BlankRequiredFields))]
     public void Create_BlankRequiredField_ThrowsArgumentException(Func<FiscalDocument> create)
     {
+        // Act
         var act = () => create();
 
+        // Assert
         act.Should().Throw<ArgumentException>();
     }
 
@@ -156,24 +172,30 @@ public class FiscalDocumentTests
     [TestCase("PER")]
     public void Create_InvalidIssuerState_ThrowsArgumentException(string state)
     {
+        // Act
         var act = () => Build(issuerState: state);
 
+        // Assert
         act.Should().Throw<ArgumentException>();
     }
 
     [Test]
     public void Create_NegativeTotal_ThrowsArgumentOutOfRangeException()
     {
+        // Act
         var act = () => Build(totalAmount: -0.01m);
 
+        // Assert
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
     [Test]
     public void Create_ZeroTotal_Succeeds()
     {
+        // Act
         var act = () => Build(totalAmount: 0m);
 
+        // Assert
         act.Should().NotThrow();
     }
 
@@ -182,10 +204,13 @@ public class FiscalDocumentTests
     [Test]
     public void UpdateManagement_ValidData_ChangesOnlyManagementFields()
     {
+        // Arrange
         var doc = Build();
 
+        // Act
         doc.UpdateManagement(DocumentStatus.Reviewed, "checked by finance", Later);
 
+        // Assert
         doc.Status.Should().Be(DocumentStatus.Reviewed);
         doc.Notes.Should().Be("checked by finance");
         doc.UpdatedAt.Should().Be(Later);
@@ -198,10 +223,13 @@ public class FiscalDocumentTests
     [Test]
     public void UpdateManagement_NotesWithSurroundingSpaces_AreTrimmed()
     {
+        // Arrange
         var doc = Build();
 
+        // Act
         doc.UpdateManagement(DocumentStatus.Reviewed, "  ok  ", Later);
 
+        // Assert
         doc.Notes.Should().Be("ok");
     }
 
@@ -210,46 +238,58 @@ public class FiscalDocumentTests
     [TestCase(null)]
     public void UpdateManagement_BlankNotes_BecomeNull(string? notes)
     {
+        // Arrange
         var doc = Build();
         doc.UpdateManagement(DocumentStatus.Reviewed, "something", Later);
 
+        // Act
         doc.UpdateManagement(DocumentStatus.Reviewed, notes, Later);
 
+        // Assert
         doc.Notes.Should().BeNull();
     }
 
     [Test]
     public void UpdateManagement_NotesWithMaxLength_Succeeds()
     {
+        // Act
         var act = () => Build().UpdateManagement(DocumentStatus.Reviewed, new string('x', 500), Later);
 
+        // Assert
         act.Should().NotThrow();
     }
 
     [Test]
     public void UpdateManagement_NotesTooLong_ThrowsArgumentException()
     {
+        // Act
         var act = () => Build().UpdateManagement(DocumentStatus.Reviewed, new string('x', 501), Later);
 
+        // Assert
         act.Should().Throw<ArgumentException>();
     }
 
     [Test]
     public void UpdateManagement_UndefinedStatus_ThrowsArgumentOutOfRangeException()
     {
+        // Act
         var act = () => Build().UpdateManagement((DocumentStatus)99, null, Later);
 
+        // Assert
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
     [Test]
     public void UpdateManagement_DeletedDocument_ThrowsInvalidOperationException()
     {
+        // Arrange
         var doc = Build();
         doc.MarkAsDeleted(Later);
 
+        // Act
         var act = () => doc.UpdateManagement(DocumentStatus.Reviewed, null, Later.AddMinutes(1));
 
+        // Assert
         act.Should().Throw<InvalidOperationException>();
     }
 
@@ -258,10 +298,13 @@ public class FiscalDocumentTests
     [Test]
     public void MarkAsDeleted_SetsFlagAndUpdatedAt()
     {
+        // Arrange
         var doc = Build();
 
+        // Act
         doc.MarkAsDeleted(Later);
 
+        // Assert
         doc.IsDeleted.Should().BeTrue();
         doc.UpdatedAt.Should().Be(Later);
     }
@@ -269,11 +312,14 @@ public class FiscalDocumentTests
     [Test]
     public void MarkAsDeleted_CalledTwice_IsIdempotent()
     {
+        // Arrange
         var doc = Build();
         doc.MarkAsDeleted(Later);
 
+        // Act
         var act = () => doc.MarkAsDeleted(Later.AddHours(1));
 
+        // Assert
         act.Should().NotThrow();
         doc.IsDeleted.Should().BeTrue();
         doc.UpdatedAt.Should().Be(Later);
@@ -284,11 +330,13 @@ public class FiscalDocumentTests
     [Test]
     public void Entity_HasNoPublicSetters()
     {
+        // Act
         var publicSetters = typeof(FiscalDocument)
             .GetProperties()
             .Where(p => p.SetMethod is { IsPublic: true })
             .Select(p => p.Name);
 
+        // Assert
         publicSetters.Should().BeEmpty();
     }
 }

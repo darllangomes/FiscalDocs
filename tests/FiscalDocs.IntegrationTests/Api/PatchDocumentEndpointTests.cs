@@ -82,18 +82,20 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task StatusAndNotes_Returns200WithUpdatedDocumentAndNewEtag()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
 
+        // Act
         var response = await PatchAsync(id, """{"status":"Reviewed","notes":"conferida"}""", etag);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
         doc.GetProperty("id").GetGuid().Should().Be(id);
         doc.GetProperty("status").GetString().Should().Be("Reviewed");
         doc.GetProperty("notes").GetString().Should().Be("conferida");
         doc.GetProperty("number").GetString().Should().Be("1001");
-
         response.Headers.ETag.Should().NotBeNull();
         response.Headers.ETag!.IsWeak.Should().BeFalse();
         response.Headers.ETag.ToString().Should().NotBe(etag);
@@ -102,13 +104,16 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task Update_IsPersisted_AndGetReturnsSameNewEtag()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
-
         var patch = await PatchAsync(id, """{"status":"Archived","notes":"fechada"}""", etag);
         patch.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        // Act
         var get = await _client.GetAsync($"{Route}/{id}");
+
+        // Assert
         get.StatusCode.Should().Be(HttpStatusCode.OK);
         get.Headers.ETag.Should().Be(patch.Headers.ETag);
         var doc = await get.Content.ReadFromJsonAsync<JsonElement>();
@@ -119,12 +124,15 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task Update_AdvancesUpdatedAt_AndKeepsCreatedAt()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var before = await GetBodyAsync(id);
         var etag = await GetEtagAsync(id);
 
+        // Act
         var response = await PatchAsync(id, """{"notes":"x"}""", etag);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var after = await response.Content.ReadFromJsonAsync<JsonElement>();
         after.GetProperty("createdAt").GetDateTimeOffset()
@@ -136,12 +144,15 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task OnlyStatus_LeavesNotesUnchanged()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var first = await PatchAsync(id, """{"notes":"original"}""", await GetEtagAsync(id));
         first.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        // Act
         var response = await PatchAsync(id, """{"status":"Reviewed"}""", await GetEtagAsync(id));
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
         doc.GetProperty("status").GetString().Should().Be("Reviewed");
@@ -151,10 +162,13 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task OnlyNotes_LeavesStatusUnchanged()
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await PatchAsync(id, """{"notes":"so notas"}""", await GetEtagAsync(id));
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
         doc.GetProperty("status").GetString().Should().Be("Received");
@@ -166,12 +180,15 @@ public class PatchDocumentEndpointTests
     [TestCase("""{"notes":"   "}""")]
     public async Task NullEmptyOrWhitespaceNotes_ClearNotes(string clearBody)
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var set = await PatchAsync(id, """{"notes":"temporaria"}""", await GetEtagAsync(id));
         set.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        // Act
         var response = await PatchAsync(id, clearBody, await GetEtagAsync(id));
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
         doc.GetProperty("notes").ValueKind.Should().Be(JsonValueKind.Null);
@@ -180,10 +197,13 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task Notes_AreTrimmed()
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await PatchAsync(id, """{"notes":"  com espacos  "}""", await GetEtagAsync(id));
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
         doc.GetProperty("notes").GetString().Should().Be("com espacos");
@@ -192,23 +212,29 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task Notes_With500Characters_AreAccepted()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var notes = new string('a', 500);
 
+        // Act
         var response = await PatchAsync(id, $$"""{"notes":"{{notes}}"}""", await GetEtagAsync(id));
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Test]
     public async Task AnyStatusTransition_IsAllowed()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         (await PatchAsync(id, """{"status":"Archived"}""", await GetEtagAsync(id)))
             .StatusCode.Should().Be(HttpStatusCode.OK);
 
+        // Act
         var back = await PatchAsync(id, """{"status":"Received"}""", await GetEtagAsync(id));
 
+        // Assert
         back.StatusCode.Should().Be(HttpStatusCode.OK);
         var doc = await back.Content.ReadFromJsonAsync<JsonElement>();
         doc.GetProperty("status").GetString().Should().Be("Received");
@@ -217,12 +243,16 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task Patch_DoesNotChangeOtherDocuments()
     {
+        // Arrange
         var target = await IngestSampleAsync("nfe-cnpj-numerico.xml");
         var other = await IngestSampleAsync("nfe-cnpj-alfanumerico.xml");
+        var etag = await GetEtagAsync(target);
 
-        var response = await PatchAsync(target, """{"status":"Archived"}""", await GetEtagAsync(target));
+        // Act
+        var response = await PatchAsync(target, """{"status":"Archived"}""", etag);
+
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-
         var untouched = await GetBodyAsync(other);
         untouched.GetProperty("status").GetString().Should().Be("Received");
     }
@@ -232,11 +262,14 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task Notes_With501Characters_Returns400()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var notes = new string('a', 501);
 
+        // Act
         var response = await PatchAsync(id, $$"""{"notes":"{{notes}}"}""", await GetEtagAsync(id));
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
     }
@@ -248,10 +281,13 @@ public class PatchDocumentEndpointTests
     [TestCase("""{"status":""}""")]
     public async Task InvalidStatus_Returns400(string body)
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await PatchAsync(id, body, await GetEtagAsync(id));
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
@@ -261,10 +297,13 @@ public class PatchDocumentEndpointTests
     [TestCase("[]")]
     public async Task EmptyOrMalformedBody_Returns400(string body)
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await PatchAsync(id, body, await GetEtagAsync(id));
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
@@ -273,11 +312,14 @@ public class PatchDocumentEndpointTests
     [TestCase("""{"id":"00000000-0000-0000-0000-000000000000"}""")]
     public async Task UnknownField_Returns400_AndChangesNothing(string body)
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
 
+        // Act
         var response = await PatchAsync(id, body, etag);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await GetEtagAsync(id)).Should().Be(etag);
         (await GetBodyAsync(id)).GetProperty("status").GetString().Should().Be("Received");
@@ -288,10 +330,13 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task WithoutIfMatch_Returns428()
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await PatchAsync(id, """{"status":"Reviewed"}""", ifMatch: null);
 
+        // Assert
         response.StatusCode.Should().Be((HttpStatusCode)428);
         (await GetBodyAsync(id)).GetProperty("status").GetString().Should().Be("Received");
     }
@@ -299,13 +344,16 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task StaleEtag_Returns412_AndChangesNothing()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var stale = await GetEtagAsync(id);
         (await PatchAsync(id, """{"notes":"primeira"}""", stale))
             .StatusCode.Should().Be(HttpStatusCode.OK);
 
+        // Act
         var response = await PatchAsync(id, """{"notes":"segunda"}""", stale);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
         (await GetBodyAsync(id)).GetProperty("notes").GetString().Should().Be("primeira");
     }
@@ -313,11 +361,14 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task WeakEtag_Returns412()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
 
+        // Act
         var response = await PatchAsync(id, """{"notes":"x"}""", $"W/{etag}");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
     }
 
@@ -327,23 +378,29 @@ public class PatchDocumentEndpointTests
     [TestCase("*")]
     public async Task GarbageEtag_Returns412(string ifMatch)
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await PatchAsync(id, """{"notes":"x"}""", ifMatch);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
     }
 
     [Test]
     public async Task ConcurrentPatches_WithSameEtag_OneSucceedsAndOneGets412()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
 
+        // Act
         var responses = await Task.WhenAll(
             PatchAsync(id, """{"notes":"A"}""", etag),
             PatchAsync(id, """{"notes":"B"}""", etag));
 
+        // Assert
         responses.Select(r => r.StatusCode).Should().BeEquivalentTo(
             new[] { HttpStatusCode.OK, HttpStatusCode.PreconditionFailed });
     }
@@ -353,8 +410,10 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task UnknownId_Returns404_EvenWithoutIfMatch()
     {
+        // Act
         var response = await PatchAsync(Guid.NewGuid(), """{"status":"Reviewed"}""", ifMatch: null);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
     }
@@ -362,14 +421,17 @@ public class PatchDocumentEndpointTests
     [Test]
     public async Task UnknownId_Returns404_EvenWithAnyIfMatch()
     {
+        // Act
         var response = await PatchAsync(Guid.NewGuid(), """{"status":"Reviewed"}""", "\"123\"");
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Test]
     public async Task SoftDeletedDocument_Returns404()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
         await using (var context = PostgresFixture.CreateContext())
@@ -379,8 +441,10 @@ public class PatchDocumentEndpointTests
             await context.SaveChangesAsync();
         }
 
+        // Act
         var response = await PatchAsync(id, """{"status":"Reviewed"}""", etag);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -388,16 +452,20 @@ public class PatchDocumentEndpointTests
     [TestCase("application/xml")]
     public async Task NonJsonContentType_Returns415(string mediaType)
     {
+        // Arrange
         var id = await IngestSampleAsync();
 
+        // Act
         var response = await PatchAsync(id, """{"status":"Reviewed"}""", await GetEtagAsync(id), mediaType);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.UnsupportedMediaType);
     }
 
     [Test]
     public async Task WithoutApiKey_Returns401()
     {
+        // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
         using var anonymous = _factory.CreateClient();
@@ -407,8 +475,10 @@ public class PatchDocumentEndpointTests
         };
         request.Headers.TryAddWithoutValidation("If-Match", etag);
 
+        // Act
         var response = await anonymous.SendAsync(request);
 
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }
