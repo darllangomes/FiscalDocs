@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddSingleton<DocumentParserResolver>();
         services.AddScoped<IngestDocumentHandler>();
         services.AddScoped<GetDocumentHandler>();
+        services.AddScoped<ListDocumentsHandler>();
 
         return services;
     }
