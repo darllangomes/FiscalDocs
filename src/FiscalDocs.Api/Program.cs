@@ -1,5 +1,6 @@
 using FiscalDocs.Application;
 using FiscalDocs.Infrastructure;
+using FiscalDocs.Api.ErrorHandling;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,9 +12,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddApplication().AddInfrastructure(builder.Configuration);
-
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
