@@ -1,4 +1,6 @@
+using FiscalDocs.IntegrationTests.Support;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace FiscalDocs.IntegrationTests;
@@ -23,8 +25,17 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         _windowSeconds = windowSeconds;
     }
 
+    public CapturingLoggerProvider Logs { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureLogging(logging =>
+        {
+            logging.AddProvider(Logs);
+            // Trace só para este provider: a saída de console dos outros testes não muda.
+            logging.AddFilter<CapturingLoggerProvider>(null, LogLevel.Trace);
+        });
+
         builder.UseSetting("ConnectionStrings:Default", PostgresFixture.ConnectionString);
         builder.UseSetting("Auth:ApiKey", _apiKey);
         builder.UseSetting("RateLimiting:PermitLimit", _permitLimit.ToString());

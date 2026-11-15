@@ -1,0 +1,93 @@
+using System.Net;
+using System.Text;
+using FiscalDocs.IntegrationTests.Support;
+using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+
+namespace FiscalDocs.IntegrationTests.Api;
+
+[TestFixture]
+public class LogPrivacyTests
+{
+    private const string Route = "/api/v1/documents";
+    private const string Cpf = "12345678909";
+    private const string FormattedCpf = "123.456.789-09";
+
+    private ApiFactory _factory = null!;
+    private HttpClient _client = null!;
+
+    [OneTimeSetUp]
+    public void Start()
+    {
+        _factory = new ApiFactory();
+        _client = _factory.CreateAuthenticatedClient();
+    }
+
+    [OneTimeTearDown]
+    public void Stop()
+    {
+        _client.Dispose();
+        _factory.Dispose();
+    }
+
+    [SetUp]
+    public async Task CleanTable()
+    {
+        await using var context = PostgresFixture.CreateContext();
+        await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE fiscal_documents");
+    }
+
+    private static string SampleWithCpf()
+    {
+        var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
+        xml.Should().Contain($"<CPF>{Cpf}</CPF>", "o teste precisa de um sample que realmente tenha CPF");
+        return xml;
+    }
+
+    private Task<HttpResponseMessage> PostAsync(string xml) =>
+        _client.PostAsync(Route, new StringContent(xml, Encoding.UTF8, "application/xml"));
+
+    private void AssertNothingSensitiveWasLogged()
+    {
+        var entries = _factory.Logs.Entries.ToArray();
+
+        entries.Should().NotBeEmpty("uma captura vazia faria as verificações abaixo passarem sem provar nada");
+        entries.Should().NotContain(e => e.Contains(Cpf), "o CPF completo nunca deve ser logado");
+        entries.Should().NotContain(e => e.Contains(FormattedCpf), "o CPF formatado nunca deve ser logado");
+        entries.Should().NotContain(
+            e => e.Contains("<?xml") || e.Contains("<CPF>") || e.Contains("<infNFe"),
+            "o corpo XML nunca deve ser logado");
+    }
+
+    [Test]
+    public async Task SuccessfulIngestion_DoesNotLogCpfOrXml()
+    {
+        var response = await PostAsync(SampleWithCpf());
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        AssertNothingSensitiveWasLogged();
+    }
+
+    [Test]
+    public async Task DuplicateIngestion_DoesNotLogCpfOrXml()
+    {
+        var xml = SampleWithCpf();
+
+        (await PostAsync(xml)).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await PostAsync(xml)).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        AssertNothingSensitiveWasLogged();
+    }
+
+    [Test]
+    public async Task RejectedDocument_DoesNotLogCpfOrXml()
+    {
+        // XML malformado (dois elementos raiz), mas ainda com o CPF no corpo.
+        var response = await PostAsync(SampleWithCpf() + "<oops>");
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        _factory.Logs.Entries.Should().Contain(e => e.Contains("Request rejected"),
+            "prova que a captura enxerga os logs da própria aplicação");
+        AssertNothingSensitiveWasLogged();
+    }
+}
