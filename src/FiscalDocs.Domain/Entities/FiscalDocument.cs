@@ -69,22 +69,22 @@ public sealed class FiscalDocument
             _ => throw new ArgumentOutOfRangeException(nameof(type))
         };
 
-        if(accessKey.Model != expectedModel)
+        if (accessKey.Model != expectedModel)
         {
             throw new ArgumentException("Access key model does not match the document type.", nameof(accessKey));
         }
-        if(accessKey.IssuerCnpj != issuerCnpj)
+        if (accessKey.IssuerCnpj != issuerCnpj)
         {
-              throw new ArgumentException("Issuer CNPJ does not match the access key.", nameof(issuerCnpj));
+            throw new ArgumentException("Issuer CNPJ does not match the access key.", nameof(issuerCnpj));
         }
-       
-       var state = issuerState?.Trim() ?? string.Empty;
-       if(state.Length != 2 || !state.All(char.IsAsciiLetter))
+
+        var state = issuerState?.Trim() ?? string.Empty;
+        if (state.Length != 2 || !state.All(char.IsAsciiLetter))
         {
             throw new ArgumentException("Issuer state must be a two-letter code.", nameof(issuerState));
         }
 
-         return new FiscalDocument
+        return new FiscalDocument
         {
             Id = Guid.NewGuid(),
             Type = type,
@@ -110,16 +110,16 @@ public sealed class FiscalDocument
     }
     public void UpdateManagement(DocumentStatus status, string? notes, DateTimeOffset now)
     {
-        if(IsDeleted)
+        if (IsDeleted)
         {
             throw new InvalidOperationException("Cannot update a deleted document.");
         }
-        if(!Enum.IsDefined(status))
+        if (!Enum.IsDefined(status))
         {
             throw new ArgumentOutOfRangeException(nameof(status));
         }
         var normalizedNotes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
-        if(normalizedNotes is {Length: > MaxNotesLength})
+        if (normalizedNotes is { Length: > MaxNotesLength })
         {
             throw new ArgumentException($"Notes cannot exceed {MaxNotesLength} characters.", nameof(notes));
         }
@@ -131,7 +131,7 @@ public sealed class FiscalDocument
 
     public void MarkAsDeleted(DateTimeOffset now)
     {
-        if(IsDeleted)
+        if (IsDeleted)
         {
             return;
         }
