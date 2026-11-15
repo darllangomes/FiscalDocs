@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using FiscalDocs.Application;
 using FiscalDocs.Infrastructure;
 using FiscalDocs.Api.ErrorHandling;
@@ -9,7 +10,8 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddApplication().AddInfrastructure(builder.Configuration);

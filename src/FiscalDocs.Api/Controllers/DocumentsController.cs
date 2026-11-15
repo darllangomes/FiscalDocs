@@ -2,6 +2,7 @@
 
 using System.Text;
 using FiscalDocs.Api.Contracts;
+using FiscalDocs.Application.Documents;
 using FiscalDocs.Application.Ingestion;
 using Microsoft.AspNetCore.Mvc;
 namespace FiscalDocs.Api.Controllers;
@@ -13,9 +14,29 @@ public sealed class DocumentesController : ControllerBase
 {
     private const int MaxBodyBytes = 2 * 1024 * 1024;
 
-    private readonly IngestDocumentHandler _handler;
+    private readonly IngestDocumentHandler _ingestHandler;
+    private readonly GetDocumentHandler _getHandler;
 
-    public DocumentesController(IngestDocumentHandler handler) => _handler = handler;
+    public DocumentesController(IngestDocumentHandler ingestHandler, GetDocumentHandler getHandler)
+    {
+        _ingestHandler = ingestHandler;
+        _getHandler = getHandler;
+    }
+
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType<DocumentResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var document = await _getHandler.HandleAsync(id, cancellationToken);
+        if (document is null)
+        {
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Document not found.");
+        }
+
+        Response.Headers.ETag = $"\"{document.Version}\"";
+        return Ok(DocumentResponse.From(document));
+    }
 
     [HttpPost]
     [Consumes("application/xml", "text/xml")]
@@ -29,7 +50,7 @@ public sealed class DocumentesController : ControllerBase
     public async Task<IActionResult> Ingest(CancellationToken cancellationToken)
     {
         var xml = await ReadBodyAsync(cancellationToken);
-        var result = await _handler.HandleAsync(xml, cancellationToken);
+        var result = await _ingestHandler.HandleAsync(xml, cancellationToken);
         var response = new DocumentIngestedResponse(result.DocumentId);
 
         return result.Outcome switch

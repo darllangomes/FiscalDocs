@@ -64,6 +64,12 @@ public sealed class FiscalDocumentConfiguration : IEntityTypeConfiguration<Fisca
             .HasConversion(v => v.ToUniversalTime(), v => v)
             .IsRequired();
 
+        builder.Property<uint>("xmin")
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .ValueGeneratedOnAddOrUpdate()
+            .IsConcurrencyToken();
+
         builder.HasQueryFilter(d => !d.IsDeleted);
 
         builder.HasIndex(d => d.AccessKey).IsUnique();
