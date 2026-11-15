@@ -13,7 +13,6 @@ public class RateLimitingTests
 
     private static StringContent EmptyXml() => new("", Encoding.UTF8, "application/xml");
 
-    // One factory per test: the limiter lives in the host, so a new host means fresh counters.
     private static ApiFactory CreateFactory() => new(permitLimit: Limit, windowSeconds: 60);
 
     private static async Task<HttpResponseMessage> ExceedLimitAsync(HttpClient client)
@@ -32,7 +31,7 @@ public class RateLimitingTests
 
         for (var i = 0; i < Limit; i++)
         {
-            // Empty body reaches the handler (422) without touching the database.
+            // Corpo vazio chega ao handler (422) sem tocar no banco.
             var response = await client.PostAsync(Route, EmptyXml());
 
             response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
@@ -80,7 +79,6 @@ public class RateLimitingTests
             failed.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
-        // Same IP, now with the right key: throttled, so the limiter runs before authentication.
         using var legit = factory.CreateAuthenticatedClient();
         var response = await legit.PostAsync(Route, EmptyXml());
 
