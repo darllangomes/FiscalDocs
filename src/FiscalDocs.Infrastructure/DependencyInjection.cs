@@ -1,5 +1,6 @@
 using FiscalDocs.Application.Abstractions;
 using FiscalDocs.Application.Parsing;
+using FiscalDocs.Infrastructure.Messaging;
 using FiscalDocs.Infrastructure.Persistence;
 using FiscalDocs.Infrastructure.Xml;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,12 @@ public static class DependencyInjection
 
         services.AddDbContext<FiscalDocsDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IFiscalDocumentRepository, FiscalDocumentRepository>();
+
+        var rabbitMqUri = configuration[$"{RabbitMqOptions.SectionName}:Uri"]
+            ?? throw new InvalidOperationException("RabbitMq:Uri is not configured.");
+        services.AddSingleton(new RabbitMqOptions { Uri = rabbitMqUri });
+        services.AddSingleton<RabbitMqConnectionProvider>();
+        services.AddSingleton<IDocumentEventPublisher, RabbitMqDocumentEventPublisher>();
 
         services.AddSingleton<IXmlDocumentLoader, SafeXmlDocumentLoader>();
         services.AddSingleton<IDocumentParser, NFeParser>();

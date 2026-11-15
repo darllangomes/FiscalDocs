@@ -1,6 +1,7 @@
 using System.Xml.Linq;
 using FiscalDocs.Application.Exceptions;
 using FiscalDocs.Application.Ingestion;
+using FiscalDocs.Application.Messaging;
 using FiscalDocs.Application.Parsing;
 using FiscalDocs.Application.Abstractions;
 using FiscalDocs.Domain.Entities;
@@ -8,6 +9,7 @@ using FiscalDocs.Domain.ValueObjects;
 using FiscalDocs.Infrastructure.Xml;
 using FiscalDocs.UnitTests.Support;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace FiscalDocs.UnitTests.Application;
@@ -20,6 +22,8 @@ public class IngestDocumentHandlerTests
 
     private IXmlDocumentLoader _loader = null!;
     private IFiscalDocumentRepository _repository = null!;
+    private IDocumentEventPublisher _publisher = null!;
+    private CapturingLogger<IngestDocumentHandler> _logger = null!;
     private TimeProvider _clock = null!;
     private IngestDocumentHandler _handler = null!;
 
@@ -32,10 +36,13 @@ public class IngestDocumentHandlerTests
         _repository = Substitute.For<IFiscalDocumentRepository>();
         _repository.TryAddAsync(Arg.Any<FiscalDocument>(), Arg.Any<CancellationToken>()).Returns(true);
 
+        _publisher = Substitute.For<IDocumentEventPublisher>();
+        _logger = new CapturingLogger<IngestDocumentHandler>();
+
         _clock = Substitute.For<TimeProvider>();
         _clock.GetUtcNow().Returns(Now);
 
-        _handler = new IngestDocumentHandler(_loader, Resolver, _repository, _clock);
+        _handler = new IngestDocumentHandler(_loader, Resolver, _repository, _publisher, _clock, _logger);
     }
 
     // Builds the document that "already exists" in the repository, from the same XML.
@@ -112,6 +119,124 @@ public class IngestDocumentHandlerTests
         // Assert
         await _repository.DidNotReceive()
             .FindByAccessKeyAsync(Arg.Any<AccessKey>(), Arg.Any<CancellationToken>());
+    }
+
+    // ---------- Event publishing ----------
+
+    [Test]
+    public async Task Handle_NewDocument_PublishesEventDescribingTheDocument()
+    {
+        // Arrange
+        var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
+        DocumentIngestedEvent? published = null;
+        await _publisher.PublishAsync(Arg.Do<DocumentIngestedEvent>(e => published = e), Arg.Any<CancellationToken>());
+
+        // Act
+        var result = await _handler.HandleAsync(xml, CancellationToken.None);
+
+        // Assert
+        published.Should().NotBeNull();
+        published!.MessageId.Should().NotBeEmpty();
+        published.DocumentId.Should().Be(result.DocumentId);
+        published.Type.Should().Be(FiscalDocs.Domain.Enums.DocumentType.NFe);
+        published.IssuerCnpj.Should().Be("11222333000181");
+        published.IssuerState.Should().Be("PE");
+        published.IssueDate.Should().Be(new DateTimeOffset(2026, 8, 14, 10, 30, 0, TimeSpan.FromHours(-3)));
+        published.TotalAmount.Should().Be(1500.00m);
+        published.OccurredAt.Should().Be(Now);
+    }
+
+    [Test]
+    public async Task Handle_NewDocument_PublishesExactlyOnce()
+    {
+        // Act
+        await _handler.HandleAsync(SampleFiles.ReadAllText("nfe-cnpj-numerico.xml"), CancellationToken.None);
+
+        // Assert
+        await _publisher.Received(1).PublishAsync(Arg.Any<DocumentIngestedEvent>(), Arg.Any<CancellationToken>());
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Handle_Duplicate_DoesNotPublish(bool deleted)
+    {
+        // Arrange
+        var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
+        var existing = ExistingFrom(xml);
+        if (deleted)
+        {
+            existing.MarkAsDeleted(Now.AddMinutes(1));
+        }
+        DuplicateOf(existing);
+
+        // Act
+        await _handler.HandleAsync(xml, CancellationToken.None);
+
+        // Assert
+        await _publisher.DidNotReceive().PublishAsync(Arg.Any<DocumentIngestedEvent>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Handle_ContentMismatch_DoesNotPublish()
+    {
+        // Arrange
+        var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
+        DuplicateOf(ExistingFrom(xml, rawXml: xml + "\n"));
+
+        // Act
+        await _handler.HandleAsync(xml, CancellationToken.None);
+
+        // Assert
+        await _publisher.DidNotReceive().PublishAsync(Arg.Any<DocumentIngestedEvent>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task Handle_PublisherFails_StillReturnsCreatedAndLogsTheError()
+    {
+        // Arrange
+        var failure = new InvalidOperationException("broker down");
+        _publisher.PublishAsync(Arg.Any<DocumentIngestedEvent>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(failure));
+
+        // Act
+        var result = await _handler.HandleAsync(SampleFiles.ReadAllText("nfe-cnpj-numerico.xml"), CancellationToken.None);
+
+        // Assert
+        result.Outcome.Should().Be(IngestOutcome.Created);
+        var entry = _logger.Entries.Should().ContainSingle(e => e.Level == LogLevel.Error).Subject;
+        entry.Exception.Should().BeSameAs(failure);
+        entry.Message.Should().Contain("Failed to publish").And.Contain(result.DocumentId.ToString());
+    }
+
+    [Test]
+    public async Task Handle_PublisherFails_LogDoesNotContainDocumentData()
+    {
+        // Arrange
+        _publisher.PublishAsync(Arg.Any<DocumentIngestedEvent>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new InvalidOperationException("broker down")));
+
+        // Act
+        await _handler.HandleAsync(SampleFiles.ReadAllText("nfe-cnpj-numerico.xml"), CancellationToken.None);
+
+        // Assert
+        _logger.Entries.Should().NotContain(e =>
+            e.Message.Contains("12345678909") || e.Message.Contains("11222333000181") || e.Message.Contains("<"));
+    }
+
+    [Test]
+    public async Task Handle_CancellationRequested_Propagates()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        _publisher.PublishAsync(Arg.Any<DocumentIngestedEvent>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromCanceled(new CancellationToken(true)));
+
+        // Act
+        var act = () => _handler.HandleAsync(SampleFiles.ReadAllText("nfe-cnpj-numerico.xml"), cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
     // ---------- Duplicates ----------

@@ -1,0 +1,60 @@
+using System.Text;
+using FiscalDocs.Infrastructure.Messaging;
+using RabbitMQ.Client;
+
+namespace FiscalDocs.IntegrationTests.Support;
+
+public sealed record ReceivedMessage(string Body, IReadOnlyBasicProperties Properties);
+
+public sealed class RabbitMqTestClient : IAsyncDisposable
+{
+    private readonly IConnection _connection;
+    private readonly IChannel _channel;
+
+    private RabbitMqTestClient(IConnection connection, IChannel channel)
+    {
+        _connection = connection;
+        _channel = channel;
+    }
+
+    public static async Task<RabbitMqTestClient> ConnectAndPurgeAsync()
+    {
+        var factory = new ConnectionFactory { Uri = new Uri(InfrastructureFixture.RabbitMqUri) };
+        var connection = await factory.CreateConnectionAsync();
+        var channel = await connection.CreateChannelAsync();
+
+        await RabbitMqTopology.DeclareAsync(channel, CancellationToken.None);
+        await channel.QueuePurgeAsync(RabbitMqTopology.DocumentIngestedQueue);
+
+        return new RabbitMqTestClient(connection, channel);
+    }
+
+    public async Task<IReadOnlyList<ReceivedMessage>> ReceiveAsync(int expected, TimeSpan timeout)
+    {
+        var messages = new List<ReceivedMessage>();
+        var deadline = DateTime.UtcNow + timeout;
+
+        while (messages.Count < expected && DateTime.UtcNow < deadline)
+        {
+            var result = await _channel.BasicGetAsync(RabbitMqTopology.DocumentIngestedQueue, autoAck: true);
+            if (result is null)
+            {
+                await Task.Delay(50);
+                continue;
+            }
+
+            messages.Add(new ReceivedMessage(Encoding.UTF8.GetString(result.Body.Span), result.BasicProperties));
+        }
+
+        return messages;
+    }
+
+    public async Task<IReadOnlyList<ReceivedMessage>> ReceiveAllAsync() =>
+        await ReceiveAsync(int.MaxValue, TimeSpan.FromMilliseconds(300));
+
+    public async ValueTask DisposeAsync()
+    {
+        await _channel.DisposeAsync();
+        await _connection.DisposeAsync();
+    }
+}

@@ -28,7 +28,7 @@ public class FiscalDocumentPersistenceTests
 
     private static async Task SaveAsync(params FiscalDocument[] documents)
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         context.Documents.AddRange(documents);
         await context.SaveChangesAsync();
     }
@@ -36,7 +36,7 @@ public class FiscalDocumentPersistenceTests
     [SetUp]
     public async Task CleanTable()
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE fiscal_documents");
     }
 
@@ -48,7 +48,7 @@ public class FiscalDocumentPersistenceTests
         // Arrange
         var original = Build(key, type);
         await SaveAsync(original);
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
 
         // Act
         var loaded = await context.Documents.SingleAsync(d => d.Id == original.Id);
@@ -65,7 +65,7 @@ public class FiscalDocumentPersistenceTests
         // Arrange
         var original = Build(); // issued at -03:00
         await SaveAsync(original);
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
 
         // Act
         var loaded = await context.Documents.SingleAsync(d => d.Id == original.Id);
@@ -97,7 +97,7 @@ public class FiscalDocumentPersistenceTests
         var document = Build();
         document.MarkAsDeleted(Now.AddMinutes(1));
         await SaveAsync(document);
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
 
         // Act & Assert
         (await context.Documents.CountAsync()).Should().Be(0);
@@ -127,7 +127,7 @@ public class FiscalDocumentPersistenceTests
         var issuer = Cnpj.Parse("11222333000181");
         var from = new DateTimeOffset(2026, 8, 1, 0, 0, 0, TimeSpan.Zero);
         var to = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero);
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
 
         // Act
         var result = await context.Documents
@@ -144,13 +144,13 @@ public class FiscalDocumentPersistenceTests
         // Arrange
         var original = Build();
         await SaveAsync(original);
-        await using (var context = PostgresFixture.CreateContext())
+        await using (var context = InfrastructureFixture.CreateContext())
         {
             var tracked = await context.Documents.SingleAsync(d => d.Id == original.Id);
             tracked.UpdateManagement(DocumentStatus.Reviewed, "checked", Now.AddMinutes(5));
             await context.SaveChangesAsync();
         }
-        await using var verify = PostgresFixture.CreateContext();
+        await using var verify = InfrastructureFixture.CreateContext();
 
         // Act
         var loaded = await verify.Documents.SingleAsync(d => d.Id == original.Id);

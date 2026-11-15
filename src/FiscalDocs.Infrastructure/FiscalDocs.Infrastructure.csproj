@@ -2,7 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FiscalDocs.Application\FiscalDocs.Application.csproj" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" /> 
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="RabbitMQ.Client" />
   </ItemGroup>
 
 

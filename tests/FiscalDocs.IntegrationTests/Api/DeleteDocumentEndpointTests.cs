@@ -33,7 +33,7 @@ public class DeleteDocumentEndpointTests
     [SetUp]
     public async Task CleanTable()
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE fiscal_documents");
     }
 
@@ -125,7 +125,7 @@ public class DeleteDocumentEndpointTests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         var document = await context.Documents.IgnoreQueryFilters().SingleAsync(d => d.Id == id);
         document.IsDeleted.Should().BeTrue();
         document.RawXml.Should().NotBeNullOrEmpty();
