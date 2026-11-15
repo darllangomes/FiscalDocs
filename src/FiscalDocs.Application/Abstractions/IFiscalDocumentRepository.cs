@@ -14,4 +14,7 @@ public interface IFiscalDocumentRepository
 
     /// <summary>Read model for the API; excludes soft-deleted documents and never loads the raw XML.</summary>
     Task<DocumentDetails?> FindDetailsByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Filtered, paged summaries, newest issue date first; excludes soft-deleted documents.</summary>
+    Task<PagedResult<DocumentSummary>> ListAsync(ListDocumentsQuery query, CancellationToken cancellationToken);
 }

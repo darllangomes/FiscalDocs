@@ -51,6 +51,40 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
                 EF.Property<uint>(d, "xmin")))
             .FirstOrDefaultAsync(cancellationToken);
 
+    public async Task<PagedResult<DocumentSummary>> ListAsync(ListDocumentsQuery query, CancellationToken cancellationToken)
+    {
+        var documents = _context.Documents.AsNoTracking();
+
+        if (query.Type is { } type) documents = documents.Where(d => d.Type == type);
+        if (query.Status is { } status) documents = documents.Where(d => d.Status == status);
+        if (query.IssuerCnpj is { } cnpj) documents = documents.Where(d => d.IssuerCnpj == cnpj);
+        if (query.IssuerState is { } state) documents = documents.Where(d => d.IssuerState == state);
+        if (query.IssuedFrom is { } from)
+        {
+            var start = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            documents = documents.Where(d => d.IssueDate >= start);
+        }
+        if (query.IssuedTo is { } to && to < DateOnly.MaxValue)
+        {
+            var endExclusive = new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            documents = documents.Where(d => d.IssueDate < endExclusive);
+        }
+
+        var total = await documents.CountAsync(cancellationToken);
+
+        var items = await documents
+            .OrderByDescending(d => d.IssueDate)
+            .ThenBy(d => d.Id)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .Select(d => new DocumentSummary(
+                d.Id, d.Type, d.Status, d.AccessKey.Value, d.Number, d.Series, d.IssueDate,
+                d.IssuerCnpj.Value, d.IssuerName, d.IssuerState, d.TotalAmount, d.UpdatedAt))
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<DocumentSummary>(items, query.Page, query.PageSize, total);
+    }
+
     private static bool IsAccessKeyViolation(DbUpdateException ex) =>
     ex.InnerException is PostgresException
     {

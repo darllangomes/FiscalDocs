@@ -16,11 +16,29 @@ public sealed class DocumentesController : ControllerBase
 
     private readonly IngestDocumentHandler _ingestHandler;
     private readonly GetDocumentHandler _getHandler;
+    private readonly ListDocumentsHandler _listHandler;
 
-    public DocumentesController(IngestDocumentHandler ingestHandler, GetDocumentHandler getHandler)
+    public DocumentesController(
+        IngestDocumentHandler ingestHandler, GetDocumentHandler getHandler, ListDocumentsHandler listHandler)
     {
         _ingestHandler = ingestHandler;
         _getHandler = getHandler;
+        _listHandler = listHandler;
+    }
+
+    [HttpGet]
+    [ProducesResponseType<ListDocumentsResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> List([FromQuery] ListDocumentsRequest request, CancellationToken cancellationToken)
+    {
+        var query = request.ToQuery(ModelState);
+        if (query is null)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var page = await _listHandler.HandleAsync(query, cancellationToken);
+        return Ok(ListDocumentsResponse.From(page));
     }
 
     [HttpGet("{id:guid}")]
