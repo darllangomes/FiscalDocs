@@ -3,6 +3,7 @@ using FiscalDocs.Application;
 using FiscalDocs.Infrastructure;
 using FiscalDocs.Api.ErrorHandling;
 using FiscalDocs.Api.Authentication;
+using FiscalDocs.Api.Health;
 using FiscalDocs.Api.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -34,6 +35,7 @@ builder.Services.AddAuthorization(options =>
         .Build());
 
 builder.Services.AddApiRateLimiting(builder.Configuration);
+builder.Services.AddApiHealthChecks();
 
 var app = builder.Build();
 
@@ -53,6 +55,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapApiHealthChecks();
 
 app.Run();
 

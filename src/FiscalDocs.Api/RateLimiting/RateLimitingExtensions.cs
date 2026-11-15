@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
+using FiscalDocs.Api.Health;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
@@ -35,6 +36,11 @@ public static class RateLimitingExtensions
 
                 limiter.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
                 {
+                    if (context.Request.Path.StartsWithSegments(HealthExtensions.BasePath))
+                    {
+                        return RateLimitPartition.GetNoLimiter("health");
+                    }
+
                     // RemoteIpAddress é null no TestServer, daí o fallback.
                     var client = context.Connection.RemoteIpAddress?.ToString() ?? UnknownClient;
 
