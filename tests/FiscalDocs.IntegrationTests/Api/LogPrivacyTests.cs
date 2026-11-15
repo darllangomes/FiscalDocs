@@ -47,6 +47,24 @@ public class LogPrivacyTests
     private Task<HttpResponseMessage> PostAsync(string xml) =>
         _client.PostAsync(Route, new StringContent(xml, Encoding.UTF8, "application/xml"));
 
+    [Test]
+    public async Task RejectedDocument_IsLoggedOnceWithoutStackTrace()
+    {
+        // Arrange
+        using var factory = new ApiFactory(traceLogs: false);
+        using var client = factory.CreateAuthenticatedClient();
+        var content = new StringContent(SampleWithCpf() + "<oops>", Encoding.UTF8, "application/xml");
+
+        // Act
+        var response = await client.PostAsync(Route, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        factory.Logs.Entries.Should().ContainSingle(e => e.Contains("Request rejected"));
+        factory.Logs.Entries.Should().NotContain(e => e.Contains("ExceptionHandlerMiddleware"));
+        factory.Logs.Entries.Should().NotContain(e => e.Contains("   at "));
+    }
+
     private void AssertNothingSensitiveWasLogged()
     {
         var entries = _factory.Logs.Entries.ToArray();

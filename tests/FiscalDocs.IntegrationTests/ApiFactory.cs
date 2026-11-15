@@ -19,17 +19,20 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     private readonly int _windowSeconds;
 
     private readonly string? _connectionString;
+    private readonly bool _traceLogs;
 
     public ApiFactory(
         string apiKey = TestApiKey,
         int permitLimit = DefaultPermitLimit,
         int windowSeconds = 60,
-        string? connectionString = null)
+        string? connectionString = null,
+        bool traceLogs = true)
     {
         _apiKey = apiKey;
         _permitLimit = permitLimit;
         _windowSeconds = windowSeconds;
         _connectionString = connectionString;
+        _traceLogs = traceLogs;
     }
 
     public CapturingLoggerProvider Logs { get; } = new();
@@ -39,8 +42,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         builder.ConfigureLogging(logging =>
         {
             logging.AddProvider(Logs);
-            // Trace só para este provider: a saída de console dos outros testes não muda.
-            logging.AddFilter<CapturingLoggerProvider>(null, LogLevel.Trace);
+            if (_traceLogs)
+            {
+                // Trace só para este provider: a saída de console dos outros testes não muda.
+                logging.AddFilter<CapturingLoggerProvider>(null, LogLevel.Trace);
+            }
         });
 
         builder.UseSetting("ConnectionStrings:Default", _connectionString ?? PostgresFixture.ConnectionString);
