@@ -10,7 +10,7 @@ namespace FiscalDocs.Api.Controllers;
 [ApiController]
 [Route("api/v1/documents")]
 
-public sealed class DocumentesController : ControllerBase
+public sealed class DocumentsController : ControllerBase
 {
     private const int MaxBodyBytes = 2 * 1024 * 1024;
 
@@ -18,7 +18,7 @@ public sealed class DocumentesController : ControllerBase
     private readonly GetDocumentHandler _getHandler;
     private readonly ListDocumentsHandler _listHandler;
 
-    public DocumentesController(
+    public DocumentsController(
         IngestDocumentHandler ingestHandler, GetDocumentHandler getHandler, ListDocumentsHandler listHandler)
     {
         _ingestHandler = ingestHandler;
