@@ -34,13 +34,15 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      # EF Core migrations are generated code, so they are not formatted by hand.
       - name: Check formatting (.editorconfig)
-        run: dotnet format --verify-no-changes --no-restore
+        run: >
+          dotnet format --verify-no-changes --no-restore
+          --exclude src/FiscalDocs.Infrastructure/Persistence/Migrations
 
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
-    
       - name: Test
         run: >
           dotnet test --configuration Release --no-build
@@ -69,7 +71,6 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-    
       - name: Check for vulnerable packages
         run: |
           dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
@@ -78,7 +79,6 @@ jobs:
             exit 1
           fi
 
-      
       - name: Forbid numeric-only CNPJ/access key handling
         run: |
           if grep -rnE '\\d\{14\}|\\d\{44\}|long\.Parse|ulong\.Parse' src --include='*.cs'; then
@@ -90,6 +90,11 @@ jobs:
     name: Secret scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # On pull requests the gitleaks action lists the PR commits through the API,
+    # which needs this permission (without it: "Resource not accessible by integration").
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
