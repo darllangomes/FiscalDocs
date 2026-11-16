@@ -31,4 +31,4 @@ PostgreSQL 16, acessado por EF Core 8 com Npgsql.
 
 - Os testes de integração rodam contra um Postgres real em container (Testcontainers). O provider em memória do EF não reproduz índice único, concorrência nem `xmin`.
 - `xmin` e `SKIP LOCKED` prendem a persistência ao Postgres; trocar de banco exige reescrever esses pontos.
-- O XML bruto convive com os metadados na mesma tabela. A listagem não o devolve (devolve só um resumo), mas, em volume muito maior, valeria mover o XML para uma tabela própria ou para armazenamento de objetos.
+- O XML bruto convive com os metadados na mesma tabela. A listagem e o detalhe não o devolvem (só `GET /api/v1/documents/{id}/xml` lê a coluna), mas, em volume muito maior, valeria mover o XML para uma tabela própria ou para armazenamento de objetos.
