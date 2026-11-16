@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using FiscalDocs.Application.Abstractions;
 using FiscalDocs.Application.Messaging;
 using RabbitMQ.Client;
@@ -8,11 +7,6 @@ namespace FiscalDocs.Infrastructure.Messaging;
 
 public sealed class RabbitMqDocumentEventPublisher : IDocumentEventPublisher, IAsyncDisposable
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
-    {
-        Converters = { new JsonStringEnumConverter() }
-    };
-
     private readonly RabbitMqConnectionProvider _connections;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private IChannel? _channel;
@@ -21,7 +15,7 @@ public sealed class RabbitMqDocumentEventPublisher : IDocumentEventPublisher, IA
 
     public async Task PublishAsync(DocumentIngestedEvent @event, CancellationToken cancellationToken)
     {
-        var body = JsonSerializer.SerializeToUtf8Bytes(@event, JsonOptions);
+        var body = JsonSerializer.SerializeToUtf8Bytes(@event, MessagingJson.Options);
         var properties = new BasicProperties
         {
             DeliveryMode = DeliveryModes.Persistent,
