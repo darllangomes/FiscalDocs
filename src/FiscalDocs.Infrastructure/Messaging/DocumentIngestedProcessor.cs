@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FiscalDocs.Infrastructure.Messaging;
 
 public sealed class DocumentIngestedProcessor(FiscalDocsDbContext context, TimeProvider clock)
+    : IDocumentIngestedProcessor
 {
     public async Task ProcessAsync(DocumentIngestedEvent @event, CancellationToken cancellationToken)
     {
