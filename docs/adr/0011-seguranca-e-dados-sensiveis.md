@@ -23,6 +23,14 @@ A API recebe XML de terceiros e guarda dados fiscais. O XML contém o CPF do des
 - não é registrado em log;
 - **fica guardado em texto puro**, na coluna `recipient_document` e dentro do XML original, que é a fonte legal e precisa ser preservado.
 
+O CPF do **emitente** (produtor rural pessoa física) tem outro tratamento, porque identifica o documento:
+
+- a API o devolve **mascarado** (`***.982.247-**`, `TaxId.Masked`); o CNPJ sai por inteiro;
+- a **chave de acesso o carrega por inteiro** (com `000` à esquerda) e é o identificador público do documento, então a máscara reduz a exposição acidental, mas não é sigilo;
+- o banco (`IssuerDocument`), o evento e o agregado diário levam o CPF completo, porque o agregado precisa de uma chave estável por emitente;
+- o filtro `issuerDocument=` recebe o CPF completo na URL, que proxies e logs de acesso podem registrar; a API não o registra (há teste);
+- fica em texto puro, como o do destinatário.
+
 **Segredos.** O `.env` fica fora do Git (o repositório traz só o `.env.example`), o desenvolvimento usa user-secrets, e o CI roda o `gitleaks`.
 
 ## Alternativas descartadas
@@ -36,4 +44,4 @@ A API recebe XML de terceiros e guarda dados fiscais. O XML contém o CPF do des
 - **Chave única.** Não há rotação sem novo deploy, nem escopos, nem identificação de quem chamou (todo chamador é `api-client`).
 - **Atrás de um proxy reverso**, o IP de origem visto pela API é o do proxy, e todos os clientes dividiriam o mesmo balde do rate limit. Em produção é preciso configurar `ForwardedHeaders` com `KnownProxies` ou `KnownNetworks`. O repositório não faz isso.
 - **TLS.** O `UseHttpsRedirection` está ativo (exceto em `/health`), mas o container escuta só HTTP na porta 8080 e não há HSTS. Em produção, o TLS deve terminar num proxy reverso.
-- **CPF em texto puro.** Depende da proteção do próprio banco e do disco.
+- **CPF em texto puro** (destinatário e emitente, este também no evento e no agregado). Depende da proteção do próprio banco, do disco e do broker.

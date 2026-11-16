@@ -15,7 +15,7 @@ Cada documento ingerido gera um evento no RabbitMQ. Gravar no banco e publicar n
 
 **Consumo (idempotência).** `DocumentIngestedProcessor` roda numa transação. Primeiro faz `INSERT INTO processed_messages … ON CONFLICT DO NOTHING`, com o `MessageId` como chave. Se nenhuma linha entrou, a mensagem é repetida e vira no-op, mesmo quando as duas cópias chegam ao mesmo tempo. Se entrou, o mesmo commit faz o upsert atômico do agregado diário em `daily_issuer_aggregates`: a chave é o dia de emissão em UTC, o CNPJ do emitente e a UF, e o agregado guarda a contagem e o valor total.
 
-**Evento.** `DocumentIngestedEvent` carrega `MessageId`, `DocumentId`, `Type`, `IssuerCnpj`, `IssuerState`, `IssueDate`, `TotalAmount` e `OccurredAt`. Não leva XML, CPF nem dados do destinatário.
+**Evento.** `DocumentIngestedEvent` carrega `MessageId`, `DocumentId`, `Type`, `IssuerDocument`, `IssuerState`, `IssueDate`, `TotalAmount` e `OccurredAt`. Não leva XML nem dados do destinatário. `IssuerDocument` é o CNPJ do emitente ou, quando ele é pessoa física, o CPF completo (ver [ADR 0011](0011-seguranca-e-dados-sensiveis.md)). Ao renomear o campo (antes `issuerCnpj`), a migration reescreve as mensagens ainda pendentes na outbox; mensagens já publicadas e não consumidas, que estejam na fila ou na DLQ, continuam com o nome antigo e chegam ao consumidor sem `issuerDocument`: o ideal é drenar a fila antes do deploy.
 
 ## Alternativas descartadas
 

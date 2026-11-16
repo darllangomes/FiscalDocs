@@ -60,13 +60,13 @@ post_xml() { # <arquivo> -> imprime o status HTTP; o corpo vai para $BODY
 
 aggregate() { # <cnpj-emitente> -> "contagem|total" ou vazio
   compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
-    "SELECT document_count || '|' || total_amount FROM daily_issuer_aggregates WHERE issuer_cnpj = '$1'"
+    "SELECT document_count || '|' || total_amount FROM daily_issuer_aggregates WHERE issuer_document = '$1'"
 }
 
 aggregate_is() { [[ "$(aggregate "$1" | tr -d '[:space:]')" == "$2" ]]; }
 
 count_is() { # <cnpj-emitente> <contagem-esperada>
-  [[ "$(compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc     "SELECT document_count FROM daily_issuer_aggregates WHERE issuer_cnpj = '$1'" | tr -d '[:space:]')" == "$2" ]]
+  [[ "$(compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc     "SELECT document_count FROM daily_issuer_aggregates WHERE issuer_document = '$1'" | tr -d '[:space:]')" == "$2" ]]
 }
 
 step "Checking for a development stack"

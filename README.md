@@ -154,7 +154,7 @@ Todas as rotas, exceto `/health/*`, exigem o header `X-Api-Key`. Os erros seguem
 | `GET /health/live` | O processo está de pé. | `200` | |
 | `GET /health/ready` | O banco responde (prazo de 3 s). | `200` | `503` |
 
-Filtros da listagem: `type` (`NFe` ou `CTe`), `status` (`Received`, `Reviewed` ou `Archived`), `issuerCnpj` (com ou sem máscara, em qualquer caixa), `issuerState` (duas letras), `issuedFrom` e `issuedTo` (datas `AAAA-MM-DD`, inclusivas, em UTC), `page` (a partir de 1) e `pageSize` (de 1 a 100, padrão 20).
+Filtros da listagem: `type` (`NFe` ou `CTe`), `status` (`Received`, `Reviewed` ou `Archived`), `issuerDocument` (CNPJ ou CPF do emitente, com ou sem máscara, em qualquer caixa; o nome antigo `issuerCnpj` dá `400`), `issuerState` (duas letras), `issuedFrom` e `issuedTo` (datas `AAAA-MM-DD`, inclusivas, em UTC), `page` (a partir de 1) e `pageSize` (de 1 a 100, padrão 20).
 
 Os exemplos usam os XMLs fictícios de `samples/`. Os valores de `id` e `ETag` mudam a cada banco.
 
@@ -208,7 +208,7 @@ curl -H "X-Api-Key: $KEY" \
       "number": "2002",
       "series": "1",
       "issueDate": "2026-08-20T17:15:00+00:00",
-      "issuerCnpj": "12ABC34501DE35",
+      "issuerDocument": "12ABC34501DE35",
       "issuerName": "EMPRESA FICTICIA ALFANUMERICA LTDA",
       "issuerState": "PE",
       "totalAmount": 8750.5,
@@ -232,7 +232,7 @@ curl -i -H "X-Api-Key: $KEY" "$API/api/v1/documents/$ID"
 # HTTP/1.1 200 OK
 # ETag: "748"
 # {"id":"87f9…","type":"NFe","status":"Received","accessKey":"2626…","number":"1001","series":"1",
-#  "issueDate":"2026-08-14T13:30:00+00:00","issuerCnpj":"11222333000181","issuerName":"…","issuerState":"PE",
+#  "issueDate":"2026-08-14T13:30:00+00:00","issuerDocument":"11222333000181","issuerName":"…","issuerState":"PE",
 #  "recipientName":"…","recipientState":"SP","totalAmount":1500.0,"notes":null,"createdAt":"…","updatedAt":"…"}
 
 curl -i -X PATCH "$API/api/v1/documents/$ID" \
@@ -269,7 +269,7 @@ Depois disso, `GET`, `PATCH` e `DELETE` desse `id` devolvem `404`, e reenviar o 
 | Filas de retry | `fiscaldocs.document-ingested.retry.1`, `.2` e `.3` (TTL de 5 s, 30 s e 2 min) |
 | Dead-letter | exchange `fiscaldocs.dlx` e fila `fiscaldocs.document-ingested.dlq` |
 
-O evento `DocumentIngested` leva `messageId`, `documentId`, `type`, `issuerCnpj`, `issuerState`, `issueDate`, `totalAmount` e `occurredAt`. Não leva XML, CPF nem dados do destinatário.
+O evento `DocumentIngested` leva `messageId`, `documentId`, `type`, `issuerDocument`, `issuerState`, `issueDate`, `totalAmount` e `occurredAt`. Não leva XML nem dados do destinatário. `issuerDocument` é o CNPJ do emitente ou, se ele for pessoa física, o CPF completo.
 
 - A entrega é *at-least-once*. O consumidor registra cada `messageId` e descarta as repetidas, então reentregas não inflam o agregado.
 - Se o processamento falha, a mensagem passa pelas filas de retry (com o TTL como backoff) e, depois de três retries, vai para a DLQ para análise manual. Uma mensagem que não deserializa vai direto para a DLQ.
@@ -291,6 +291,7 @@ O painel do RabbitMQ (`http://localhost:15672`) mostra as filas, as mensagens em
 - **XML hostil:** DTD proibido e sem resolução de entidades externas (XXE), limite de 5 milhões de caracteres no parser e de 2 MiB no corpo.
 - **Logs e erros:** nunca registram o XML, o corpo da requisição nem o CPF, e as respostas de erro não trazem stack trace. Testes de integração provam isso.
 - **CPF do destinatário:** nenhum endpoint o devolve, ele não entra no evento e não vai para os logs. Mas **fica guardado em texto puro** no banco (coluna `recipient_document` e dentro do XML original). Cifrá-lo é uma evolução prevista.
+- **CPF do emitente** (produtor rural pessoa física): a API o devolve mascarado (`***.982.247-**`) em `issuerDocument`, mas a **chave de acesso o carrega por inteiro** (com zeros à esquerda) e é o identificador público do documento, então a máscara não é sigilo. O CPF completo fica no banco (`IssuerDocument`), no evento e no agregado, e o filtro `issuerDocument=` o recebe na URL, que proxies podem registrar.
 - **Segredos:** o `.env` fica fora do Git, o desenvolvimento usa user-secrets e o CI roda o `gitleaks`.
 
 Detalhes e limitações (chave única, proxy reverso, TLS) em [ADR 0011](docs/adr/0011-seguranca-e-dados-sensiveis.md).
@@ -341,7 +342,7 @@ Cada decisão tem um registro com contexto, alternativas descartadas e o custo a
 
 Limitações, com o registro onde cada uma é explicada:
 
-- Emitente pessoa física (CPF) é rejeitado com `422`; CNPJ com todos os dígitos iguais não é rejeitado ([ADR 0004](docs/adr/0004-cnpj-e-chave-de-acesso-alfanumericos.md)).
+- CNPJ com todos os dígitos iguais não é rejeitado ([ADR 0004](docs/adr/0004-cnpj-e-chave-de-acesso-alfanumericos.md)).
 - O XML original é guardado, mas ainda não há endpoint para baixá-lo.
 - O POST aceita só o XML no corpo (`application/xml` ou `text/xml`), sem `multipart/form-data`.
 - Não há endpoint para restaurar um documento apagado, e reenviá-lo dá `409` ([ADR 0009](docs/adr/0009-concorrencia-otimista-patch-e-soft-delete.md)).

@@ -95,7 +95,7 @@ export function list_filtered() {
 
 export function list_cnpj() {
   const cnpj = ISSUER_CNPJS[Math.floor(Math.random() * ISSUER_CNPJS.length)];
-  list(`issuerCnpj=${cnpj}&pageSize=${PAGE_SIZE}`, 'list_cnpj');
+  list(`issuerDocument=${cnpj}&pageSize=${PAGE_SIZE}`, 'list_cnpj');
 }
 
 export function list_deep(data) {
