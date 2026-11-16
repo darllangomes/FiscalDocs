@@ -147,6 +147,18 @@ O **Worker** (agregado diário, retry e DLQ) precisa também de um RabbitMQ 3.x 
 
 Os testes **unitários e de arquitetura** rodam sem Docker (`dotnet test tests/FiscalDocs.UnitTests` e `tests/FiscalDocs.ArchitectureTests`). Os de **integração** sobem PostgreSQL e RabbitMQ reais com o Testcontainers, então precisam do Docker.
 
+### Teste de carga
+
+Requisito: Docker, e nenhuma outra stack `fiscaldocs-*` no ar (o script se recusa a rodar; faça `docker compose down` antes). O k6 roda num container, então não há nada para instalar.
+
+```bash
+bash loadtests/run.sh ingest                                  # 50 documentos por segundo durante 60 s
+RATES=50,100,200 DURATION=30s bash loadtests/run.sh ingest    # várias taxas em sequência
+bash loadtests/run.sh queries                                 # grava 5 000 documentos e mede as consultas
+```
+
+O script sobe uma stack própria (`fiscaldocs-load`, com o rate limit elevado), mede a carga, confere se a outbox esvazia e se o total de documentos bate com o agregado, e derruba tudo. Variáveis, cenários e resultados em [`loadtests/README.md`](loadtests/README.md).
+
 ### Configuração
 
 Cada chave também pode vir de uma variável de ambiente, com `__` no lugar de `:` (por exemplo, `Auth__ApiKey`).
@@ -281,7 +293,9 @@ curl -i -X DELETE "$API/api/v1/documents/$ID" -H "X-Api-Key: $KEY" -H 'If-Match:
 
 Depois disso, `GET`, `PATCH` e `DELETE` desse `id` devolvem `404`, e reenviar o mesmo XML devolve `409`.
 
-**Swagger.** A interface fica em `/swagger` e só existe no ambiente Development (veja [Desenvolvimento local](#desenvolvimento-local)). Use o botão *Authorize* com a chave de API.
+**Swagger.** A interface fica em `/swagger` e só existe no ambiente Development (veja [Desenvolvimento local](#desenvolvimento-local)). Use o botão *Authorize* com a chave de API. Cada rota tem resumo, descrição das respostas, exemplos e o campo `If-Match`, e o corpo do `POST` já vem com um XML válido.
+
+**Validando à mão.** [`docs/manual-testing.md`](docs/manual-testing.md) é um roteiro passo a passo, com `curl`, o que esperar de cada chamada (sucessos e erros), o caminho do evento até o agregado e um checklist final. [`docs/api.http`](docs/api.http) traz as mesmas chamadas para o VS Code (REST Client) ou o JetBrains.
 
 ## Mensageria
 
@@ -331,7 +345,7 @@ dotnet test tests/FiscalDocs.ArchitectureTests   # sem Docker
 | Projeto | Testes | O que cobre |
 |---|---|---|
 | `FiscalDocs.UnitTests` | 213 | Domínio (CNPJ e chave de acesso, numéricos e alfanuméricos), parsers de NFe e CTe, handler de ingestão e leitura segura de XML. |
-| `FiscalDocs.IntegrationTests` | 292 | A API de ponta a ponta e a mensageria, com PostgreSQL e RabbitMQ reais em containers (Testcontainers): ingestão e concorrência, consulta, `PATCH` e `DELETE`, outbox, consumidor, retry e DLQ, health checks, rate limiting, Swagger e privacidade dos logs. |
+| `FiscalDocs.IntegrationTests` | 324 | A API de ponta a ponta e a mensageria, com PostgreSQL e RabbitMQ reais em containers (Testcontainers): ingestão e concorrência, consulta, `PATCH` e `DELETE`, outbox, consumidor, retry e DLQ, health checks, rate limiting, Swagger e privacidade dos logs. |
 | `FiscalDocs.ArchitectureTests` | 14 | Regra de dependência entre as camadas (NetArchTest). |
 
 Os testes de integração usam containers reais porque o provider em memória do EF não reproduz índice único, concorrência nem `xmin` ([ADR 0001](docs/adr/0001-postgresql-como-banco.md)). Na primeira execução o Docker baixa as imagens `postgres:16` e `rabbitmq:3-management`.

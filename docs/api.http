@@ -1,0 +1,95 @@
+# Chamadas prontas para a extensão REST Client (VS Code) ou para o cliente HTTP do JetBrains.
+# Roteiro completo, com o que esperar de cada uma: docs/manual-testing.md
+#
+# Antes: ajuste as duas variáveis abaixo. Rode "Send Request" de cima para baixo.
+# O @id e o @etag são lidos das respostas anteriores pelos nomes das requisições (# @name).
+
+@api = http://localhost:5260
+@key = <sua chave de API>
+
+### Saúde (não exige chave): 200
+GET {{api}}/health/ready
+
+### Sem chave: 401
+GET {{api}}/api/v1/documents
+
+### 1. Ingestão: 201 na primeira vez, 200 no reenvio (a data de emissão e o valor vêm do arquivo)
+# @name ingest
+POST {{api}}/api/v1/documents
+X-Api-Key: {{key}}
+Content-Type: application/xml
+
+< ../samples/nfe-cnpj-numerico.xml
+
+@id = {{ingest.response.body.$.id}}
+
+### 2. Outros documentos: CNPJ alfanumérico, CTe e emitente pessoa física
+POST {{api}}/api/v1/documents
+X-Api-Key: {{key}}
+Content-Type: application/xml
+
+< ../samples/nfe-emitente-cpf.xml
+
+### 3. XML mal formado: 422
+POST {{api}}/api/v1/documents
+X-Api-Key: {{key}}
+Content-Type: application/xml
+
+< ../samples/invalido.xml
+
+### 4. XML com DTD (XXE): 422
+POST {{api}}/api/v1/documents
+X-Api-Key: {{key}}
+Content-Type: application/xml
+
+< ../samples/malicioso-xxe.xml
+
+### 5. Listagem com filtros: 200
+GET {{api}}/api/v1/documents?type=NFe&issuerState=PE&pageSize=5
+X-Api-Key: {{key}}
+
+### 6. Filtro por CPF do emitente (volta mascarado): 200
+GET {{api}}/api/v1/documents?issuerDocument=529.982.247-25
+X-Api-Key: {{key}}
+
+### 7. Filtro inválido: 400
+GET {{api}}/api/v1/documents?issuerDocument=123
+X-Api-Key: {{key}}
+
+### 8. Detalhe: 200, com o ETag no header da resposta
+# @name detail
+GET {{api}}/api/v1/documents/{{id}}
+X-Api-Key: {{key}}
+
+@etag = {{detail.response.headers.ETag}}
+
+### 9. Edição com o ETag certo: 200 e um ETag novo
+PATCH {{api}}/api/v1/documents/{{id}}
+X-Api-Key: {{key}}
+Content-Type: application/json
+If-Match: {{etag}}
+
+{ "status": "Reviewed", "notes": "Conferida pelo financeiro" }
+
+### 10. Repetir com o mesmo ETag (agora velho): 412
+PATCH {{api}}/api/v1/documents/{{id}}
+X-Api-Key: {{key}}
+Content-Type: application/json
+If-Match: {{etag}}
+
+{ "status": "Archived" }
+
+### 11. Sem If-Match: 428
+PATCH {{api}}/api/v1/documents/{{id}}
+X-Api-Key: {{key}}
+Content-Type: application/json
+
+{ "status": "Archived" }
+
+### 12. Download do XML: 200, anexo <chave>.xml, sem máscara no CPF
+GET {{api}}/api/v1/documents/{{id}}/xml
+X-Api-Key: {{key}}
+
+### 13. Exclusão: 204 (depois, o detalhe e o XML dão 404 e reenviar o XML dá 409)
+DELETE {{api}}/api/v1/documents/{{id}}
+X-Api-Key: {{key}}
