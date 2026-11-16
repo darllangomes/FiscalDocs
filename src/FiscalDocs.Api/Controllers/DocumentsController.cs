@@ -13,9 +13,11 @@ namespace FiscalDocs.Api.Controllers;
 public sealed class DocumentsController : ControllerBase
 {
     private const int MaxBodyBytes = 2 * 1024 * 1024;
+    private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
 
     private readonly IngestDocumentHandler _ingestHandler;
     private readonly GetDocumentHandler _getHandler;
+    private readonly GetDocumentXmlHandler _getXmlHandler;
     private readonly ListDocumentsHandler _listHandler;
     private readonly UpdateDocumentHandler _updateHandler;
     private readonly DeleteDocumentHandler _deleteHandler;
@@ -23,12 +25,14 @@ public sealed class DocumentsController : ControllerBase
     public DocumentsController(
         IngestDocumentHandler ingestHandler,
         GetDocumentHandler getHandler,
+        GetDocumentXmlHandler getXmlHandler,
         ListDocumentsHandler listHandler,
         UpdateDocumentHandler updateHandler,
         DeleteDocumentHandler deleteHandler)
     {
         _ingestHandler = ingestHandler;
         _getHandler = getHandler;
+        _getXmlHandler = getXmlHandler;
         _listHandler = listHandler;
         _updateHandler = updateHandler;
         _deleteHandler = deleteHandler;
@@ -62,6 +66,27 @@ public sealed class DocumentsController : ControllerBase
 
         Response.Headers.ETag = $"\"{document.Version}\"";
         return Ok(DocumentResponse.From(document));
+    }
+
+    /// <summary>
+    /// O XML guardado, em UTF-8 e sem BOM. Não é mascarado: o CPF do emitente e do destinatário saem por inteiro.
+    /// </summary>
+    [HttpGet("{id:guid}/xml")]
+    // Sem [Produces]: ele trocaria o tipo de conteúdo do ProblemDetails do 404 por application/xml e daria 406.
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK, "application/xml")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> GetXml(Guid id, CancellationToken cancellationToken)
+    {
+        var document = await _getXmlHandler.HandleAsync(id, cancellationToken);
+        if (document is null)
+        {
+            return Problem(statusCode: StatusCodes.Status404NotFound, title: "Document not found.");
+        }
+
+        // O XML tem o CPF do destinatário: nenhum cache, do cliente ou de intermediários, deve guardá-lo.
+        Response.Headers.CacheControl = "no-store";
+
+        return File(Utf8WithoutBom.GetBytes(document.Xml), "application/xml; charset=utf-8", $"{document.AccessKey}.xml");
     }
 
     [HttpPatch("{id:guid}")]

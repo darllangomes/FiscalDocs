@@ -68,6 +68,13 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
                 EF.Property<uint>(d, "xmin")))
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<DocumentXml?> FindXmlByIdAsync(Guid id, CancellationToken cancellationToken) =>
+        _context.Documents
+            .AsNoTracking()
+            .Where(d => d.Id == id)
+            .Select(d => new DocumentXml(d.AccessKey.Value, d.RawXml))
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<PagedResult<DocumentSummary>> ListAsync(ListDocumentsQuery query, CancellationToken cancellationToken)
     {
         var documents = _context.Documents.AsNoTracking();

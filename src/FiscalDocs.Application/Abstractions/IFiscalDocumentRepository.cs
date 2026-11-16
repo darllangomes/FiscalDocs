@@ -15,6 +15,9 @@ public interface IFiscalDocumentRepository
     /// <summary>Modelo de leitura da API; exclui documentos apagados e nunca carrega o XML bruto.</summary>
     Task<DocumentDetails?> FindDetailsByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>O XML guardado e a chave de acesso; exclui documentos apagados. Só este método lê o XML bruto.</summary>
+    Task<DocumentXml?> FindXmlByIdAsync(Guid id, CancellationToken cancellationToken);
+
     /// <summary>Resumos filtrados e paginados, emissão mais recente primeiro; exclui documentos apagados.</summary>
     Task<PagedResult<DocumentSummary>> ListAsync(ListDocumentsQuery query, CancellationToken cancellationToken);
 
