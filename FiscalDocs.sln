@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiscalDocs.UnitTests", "tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiscalDocs.IntegrationTests", "tests\FiscalDocs.IntegrationTests\FiscalDocs.IntegrationTests.csproj", "{51CB86D1-7F24-4013-AC3F-98248E97206E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FiscalDocs.ArchitectureTests", "tests\FiscalDocs.ArchitectureTests\FiscalDocs.ArchitectureTests.csproj", "{5A7F9528-FD16-42F4-82B6-96E57B2F42B6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -58,6 +60,10 @@ Global
 		{51CB86D1-7F24-4013-AC3F-98248E97206E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{51CB86D1-7F24-4013-AC3F-98248E97206E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{51CB86D1-7F24-4013-AC3F-98248E97206E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A7F9528-FD16-42F4-82B6-96E57B2F42B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A7F9528-FD16-42F4-82B6-96E57B2F42B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A7F9528-FD16-42F4-82B6-96E57B2F42B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A7F9528-FD16-42F4-82B6-96E57B2F42B6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{730C6A2C-4AD7-479B-95BD-01B16551A206} = {C6A9791D-4959-4CE9-942F-EF38C6A5DF7E}
@@ -67,5 +73,6 @@ Global
 		{840C8CC9-63A5-404B-874B-56AFBD51B44A} = {C6A9791D-4959-4CE9-942F-EF38C6A5DF7E}
 		{B7D09370-632B-4BF2-84DA-6FDF64A43BCB} = {4CC53440-4914-421D-980E-EC65C4246AF2}
 		{51CB86D1-7F24-4013-AC3F-98248E97206E} = {4CC53440-4914-421D-980E-EC65C4246AF2}
+		{5A7F9528-FD16-42F4-82B6-96E57B2F42B6} = {4CC53440-4914-421D-980E-EC65C4246AF2}
 	EndGlobalSection
 EndGlobal
