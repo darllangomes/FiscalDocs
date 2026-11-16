@@ -65,7 +65,6 @@ public static class RabbitMqTopology
         }
     }
 
-    // Attempt numbers start at 1.
     public static string RetryQueueName(int attempt) => RetryQueuePrefix + attempt;
 
     public static IEnumerable<string> RetryQueueNames(int count) =>

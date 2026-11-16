@@ -9,6 +9,7 @@ public sealed class FiscalDocsDbContext(DbContextOptions<FiscalDocsDbContext> op
     public DbSet<FiscalDocument> Documents => Set<FiscalDocument>();
     public DbSet<DailyIssuerAggregate> DailyAggregates => Set<DailyIssuerAggregate>();
     public DbSet<ProcessedMessage> ProcessedMessages => Set<ProcessedMessage>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FiscalDocsDbContext).Assembly);
