@@ -27,5 +27,10 @@ public sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outbox
         builder.HasIndex(m => new { m.OccurredAt, m.Id })
             .HasDatabaseName("IX_outbox_messages_pending")
             .HasFilter("processed_at IS NULL");
+
+        // A limpeza procura as já publicadas e antigas: sem este índice, cada passada varreria a tabela inteira.
+        builder.HasIndex(m => m.ProcessedAt)
+            .HasDatabaseName("IX_outbox_messages_processed")
+            .HasFilter("processed_at IS NOT NULL");
     }
 }
