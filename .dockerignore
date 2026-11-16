@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+.git/
+.github/
+.config/
+.env
+tests/
+samples/
+scripts/
+*.md
+coverage*/
