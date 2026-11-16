@@ -76,7 +76,8 @@ curl -sf "$API/health/ready" >/dev/null || fail "API did not become ready"
 
 if [[ "$WHAT" == "ingest" || "$WHAT" == "all" ]]; then
   step "k6: ingestion"
-  k6 ingest.js ingest.json ${RATE:+RATE=$RATE} ${DURATION:+DURATION=$DURATION} || echo "(thresholds failed; see above)"
+  k6 ingest.js ingest.json ${RATES:+RATES=$RATES} ${DURATION:+DURATION=$DURATION} ${ITEMS:+ITEMS=$ITEMS} \
+    || echo "(thresholds failed; see above)"
 
   step "Waiting for the outbox to drain"
   start=$SECONDS
@@ -91,7 +92,7 @@ fi
 
 if [[ "$WHAT" == "queries" || "$WHAT" == "all" ]]; then
   step "k6: queries"
-  k6 queries.js queries.json ${SEED:+SEED=$SEED} ${RATE:+RATE=$RATE} ${DURATION:+DURATION=$DURATION} \
+  k6 queries.js queries.json ${SEED:+SEED=$SEED} ${RATE:+RATE=$RATE} ${DURATION:+DURATION=$DURATION} ${ITEMS:+ITEMS=$ITEMS} \
     || echo "(thresholds failed; see above)"
 fi
 
