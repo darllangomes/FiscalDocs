@@ -13,7 +13,6 @@ public class DocumentIngestedRetryTests
 {
     private static readonly TimeSpan WaitTimeout = TimeSpan.FromSeconds(20);
 
-    // 1 first delivery + one per retry delay.
     private static int MaxDeliveries => InfrastructureFixture.RetryDelays.Count + 1;
 
     private RabbitMqTestClient _broker = null!;
