@@ -1,7 +1,9 @@
 using FiscalDocs.Application.Abstractions;
 using FiscalDocs.Application.Documents;
+using FiscalDocs.Application.Messaging;
 using FiscalDocs.Domain.Entities;
 using FiscalDocs.Domain.ValueObjects;
+using FiscalDocs.Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -19,7 +21,11 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
 
     public async Task<bool> TryAddAsync(FiscalDocument document, CancellationToken cancellationToken)
     {
+        // The event is stored with the document in one SaveChanges (one transaction): either both
+        // exist or neither does. The outbox relay publishes it later.
+        var outbox = OutboxMessage.From(IngestedEventFor(document));
         _context.Documents.Add(document);
+        _context.OutboxMessages.Add(outbox);
         try
         {
             await _context.SaveChangesAsync(cancellationToken);
@@ -28,9 +34,20 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
         catch (DbUpdateException ex) when (IsAccessKeyViolation(ex))
         {
             _context.Entry(document).State = EntityState.Detached;
+            _context.Entry(outbox).State = EntityState.Detached;
             return false;
         }
     }
+
+    private static DocumentIngestedEvent IngestedEventFor(FiscalDocument document) => new(
+        Guid.NewGuid(),
+        document.Id,
+        document.Type,
+        document.IssuerCnpj.Value,
+        document.IssuerState,
+        document.IssueDate,
+        document.TotalAmount,
+        document.CreatedAt);
 
     public Task<FiscalDocument?> FindByAccessKeyAsync(AccessKey accessKey, CancellationToken cancellationToken)
     {

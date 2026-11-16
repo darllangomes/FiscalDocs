@@ -34,7 +34,6 @@ public class DocumentIngestedProcessorTests
             TotalAmount: total,
             OccurredAt: Now);
 
-    // Each call uses its own context and scope, like separate deliveries would.
     private static async Task ProcessAsync(DocumentIngestedEvent @event)
     {
         await using var context = InfrastructureFixture.CreateContext();

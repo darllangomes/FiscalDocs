@@ -158,6 +158,40 @@ namespace FiscalDocs.Infrastructure.Persistence.Migrations
                     b.ToTable("daily_issuer_aggregates", (string)null);
                 });
 
+            modelBuilder.Entity("FiscalDocs.Infrastructure.Messaging.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAt", "Id")
+                        .HasDatabaseName("IX_outbox_messages_pending")
+                        .HasFilter("processed_at IS NULL");
+
+                    b.ToTable("outbox_messages", (string)null);
+                });
+
             modelBuilder.Entity("FiscalDocs.Infrastructure.Messaging.ProcessedMessage", b =>
                 {
                     b.Property<Guid>("MessageId")

@@ -1,9 +1,7 @@
 using FiscalDocs.Application.Abstractions;
 using FiscalDocs.Application.Exceptions;
-using FiscalDocs.Application.Messaging;
 using FiscalDocs.Application.Parsing;
 using FiscalDocs.Domain.Entities;
-using Microsoft.Extensions.Logging;
 
 namespace FiscalDocs.Application.Ingestion;
 
@@ -12,24 +10,18 @@ public sealed class IngestDocumentHandler
     private readonly IXmlDocumentLoader _loader;
     private readonly DocumentParserResolver _resolver;
     private readonly IFiscalDocumentRepository _repository;
-    private readonly IDocumentEventPublisher _publisher;
     private readonly TimeProvider _clock;
-    private readonly ILogger<IngestDocumentHandler> _logger;
 
     public IngestDocumentHandler(
         IXmlDocumentLoader loader,
         DocumentParserResolver resolver,
         IFiscalDocumentRepository repository,
-        IDocumentEventPublisher publisher,
-        TimeProvider clock,
-        ILogger<IngestDocumentHandler> logger)
+        TimeProvider clock)
     {
         _loader = loader;
         _resolver = resolver;
         _repository = repository;
-        _publisher = publisher;
         _clock = clock;
-        _logger = logger;
     }
 
     public async Task<IngestResult> HandleAsync(string xml, CancellationToken cancellationToken)
@@ -47,7 +39,6 @@ public sealed class IngestDocumentHandler
         // Insert first and let the unique index decide: no check-then-insert race.
         if (await _repository.TryAddAsync(document, cancellationToken))
         {
-            await PublishIngestedEventAsync(document, cancellationToken);
             return new IngestResult(IngestOutcome.Created, document.Id);
         }
 
@@ -62,32 +53,6 @@ public sealed class IngestDocumentHandler
                 : IngestOutcome.ContentMismatch;
 
         return new IngestResult(outcome, existing.Id);
-    }
-
-    private async Task PublishIngestedEventAsync(FiscalDocument document, CancellationToken cancellationToken)
-    {
-        var ingested = new DocumentIngestedEvent(
-            Guid.NewGuid(),
-            document.Id,
-            document.Type,
-            document.IssuerCnpj.Value,
-            document.IssuerState,
-            document.IssueDate,
-            document.TotalAmount,
-            _clock.GetUtcNow());
-
-        try
-        {
-            await _publisher.PublishAsync(ingested, cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to publish DocumentIngested event for document {DocumentId}.", document.Id);
-        }
     }
 
     private FiscalDocument CreateDocument(ParsedDocument parsed, string xml)
