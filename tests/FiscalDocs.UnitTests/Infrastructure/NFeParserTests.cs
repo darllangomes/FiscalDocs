@@ -74,6 +74,62 @@ public class NFeParserTests
             8750.50m));
     }
 
+    // XMLs no formato real: minificados, com itens, impostos, transporte, pagamento,
+    // assinatura digital e protocolo. Os samples antigos não tinham nada disso.
+    [Test]
+    public void Parse_RealisticNFeWithSignatureAndItems_ExtractsAllFields()
+    {
+        // Act
+        var result = _parser.Parse(Load("nfe-realista-3itens.xml"));
+
+        // Assert
+        result.Should().BeEquivalentTo(new ParsedDocument(
+            DocumentType.NFe,
+            AccessKey.Parse("26260811222333000181550010000050051784057835"),
+            "5005",
+            "1",
+            new DateTimeOffset(2026, 8, 16, 9, 12, 44, TimeSpan.FromHours(-3)),
+            Cnpj.Parse("11222333000181"),
+            "EMPRESA FICTICIA NUMERICA LTDA",
+            "PE",
+            "12ABC34501DE35",
+            "EMPRESA FICTICIA ALFANUMERICA LTDA",
+            "SP",
+            1029.39m));
+    }
+
+    [Test]
+    public void Parse_RealisticNFeWithManyItems_UsesTheDocumentTotalNotAnItem()
+    {
+        // Act
+        var result = _parser.Parse(Load("nfe-realista-250itens.xml"));
+
+        // Assert
+        result.Number.Should().Be("6006");
+        result.TotalAmount.Should().Be(64445.17m);
+        result.RecipientDocument.Should().Be("12345678909");
+    }
+
+    [Test]
+    public void Parse_NFeWithTheMaximumNumberOfItems_ExtractsTheDocumentTotal()
+    {
+        // Act
+        var result = _parser.Parse(Load("nfe-realista-990itens.xml"));
+
+        // Assert
+        result.Number.Should().Be("7007");
+        result.TotalAmount.Should().Be(258283.36m);
+    }
+
+    [TestCase("nfe-realista-3itens.xml")]
+    [TestCase("nfe-realista-250itens.xml")]
+    [TestCase("nfe-realista-990itens.xml")]
+    public void CanParse_RealisticNFe_ReturnsTrue(string file)
+    {
+        // Act & Assert
+        _parser.CanParse(Load(file)).Should().BeTrue();
+    }
+
     [Test]
     public void Parse_RootWithoutProtocolEnvelope_Works()
     {

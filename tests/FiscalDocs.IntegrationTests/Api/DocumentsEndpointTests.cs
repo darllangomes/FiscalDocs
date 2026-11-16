@@ -60,6 +60,9 @@ public class DocumentsEndpointTests
     [TestCase("nfe-cnpj-alfanumerico.xml")]
     [TestCase("cte-cnpj-numerico.xml")]
     [TestCase("cte-cnpj-alfanumerico.xml")]
+    [TestCase("nfe-realista-3itens.xml")]
+    [TestCase("nfe-realista-250itens.xml")]
+    [TestCase("nfe-realista-990itens.xml")]
     public async Task Post_NewDocument_Returns201WithLocationAndId(string file)
     {
         // Act
