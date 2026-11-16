@@ -31,13 +31,17 @@ public class DocumentIngestedConsumerTests
         }
 
         _broker = await RabbitMqTestClient.ConnectAndPurgeAsync();
-        _connections = new RabbitMqConnectionProvider(new RabbitMqOptions { Uri = InfrastructureFixture.RabbitMqUri });
+        _connections = new RabbitMqConnectionProvider(new RabbitMqOptions
+        {
+            Uri = InfrastructureFixture.RabbitMqUri,
+            RetryDelays = InfrastructureFixture.RetryDelays
+        });
         _publisher = new RabbitMqDocumentEventPublisher(_connections);
 
         _services = new ServiceCollection()
             .AddDbContext<FiscalDocsDbContext>(o => o.UseNpgsql(InfrastructureFixture.ConnectionString))
             .AddSingleton(TimeProvider.System)
-            .AddScoped<DocumentIngestedProcessor>()
+            .AddScoped<IDocumentIngestedProcessor, DocumentIngestedProcessor>()
             .BuildServiceProvider();
     }
 

@@ -24,19 +24,46 @@ public sealed class RabbitMqTestClient : IAsyncDisposable
         var channel = await connection.CreateChannelAsync();
 
         await RabbitMqTopology.DeclareAsync(channel, CancellationToken.None);
-        await channel.QueuePurgeAsync(RabbitMqTopology.DocumentIngestedQueue);
+        await RabbitMqTopology.DeclareRetryAsync(channel, InfrastructureFixture.RetryDelays, CancellationToken.None);
+
+        foreach (var queue in AllQueues)
+        {
+            await channel.QueuePurgeAsync(queue);
+        }
 
         return new RabbitMqTestClient(connection, channel);
     }
 
-    public async Task<IReadOnlyList<ReceivedMessage>> ReceiveAsync(int expected, TimeSpan timeout)
+    private static IEnumerable<string> AllQueues =>
+        new[] { RabbitMqTopology.DocumentIngestedQueue, RabbitMqTopology.DeadLetterQueue }
+            .Concat(RabbitMqTopology.RetryQueueNames(InfrastructureFixture.RetryDelays.Count));
+
+    public Task<IReadOnlyList<ReceivedMessage>> ReceiveAsync(int expected, TimeSpan timeout) =>
+        ReceiveAsync(RabbitMqTopology.DocumentIngestedQueue, expected, timeout);
+
+    public Task<IReadOnlyList<ReceivedMessage>> ReceiveDeadLettersAsync(int expected, TimeSpan timeout) =>
+        ReceiveAsync(RabbitMqTopology.DeadLetterQueue, expected, timeout);
+
+    // Ready messages only: unacked ones are not counted.
+    public async Task<int> CountRetryMessagesAsync()
+    {
+        var total = 0;
+        foreach (var queue in RabbitMqTopology.RetryQueueNames(InfrastructureFixture.RetryDelays.Count))
+        {
+            total += (int)(await _channel.QueueDeclarePassiveAsync(queue)).MessageCount;
+        }
+
+        return total;
+    }
+
+    private async Task<IReadOnlyList<ReceivedMessage>> ReceiveAsync(string queue, int expected, TimeSpan timeout)
     {
         var messages = new List<ReceivedMessage>();
         var deadline = DateTime.UtcNow + timeout;
 
         while (messages.Count < expected && DateTime.UtcNow < deadline)
         {
-            var result = await _channel.BasicGetAsync(RabbitMqTopology.DocumentIngestedQueue, autoAck: true);
+            var result = await _channel.BasicGetAsync(queue, autoAck: true);
             if (result is null)
             {
                 await Task.Delay(50);

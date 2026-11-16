@@ -8,8 +8,11 @@ public sealed class RabbitMqConnectionProvider : IAsyncDisposable
     private readonly SemaphoreSlim _gate = new(1, 1);
     private IConnection? _connection;
 
+    public RabbitMqOptions Options { get; }
+
     public RabbitMqConnectionProvider(RabbitMqOptions options)
     {
+        Options = options;
         _factory = new ConnectionFactory
         {
             Uri = new Uri(options.Uri),
