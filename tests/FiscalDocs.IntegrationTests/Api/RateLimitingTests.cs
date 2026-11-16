@@ -2,6 +2,9 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FiscalDocs.IntegrationTests.Api;
 
@@ -93,5 +96,71 @@ public class RateLimitingTests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    [Test]
+    public async Task ExhaustedBucketOfOneIp_DoesNotAffectAnotherIp()
+    {
+        // Arrange
+        using var baseFactory = CreateFactory();
+        using var factory = baseFactory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services => services.AddSingleton<IStartupFilter, ClientIpStartupFilter>()));
+        using var noisy = CreateClientFrom(factory, "10.0.0.1");
+        using var quiet = CreateClientFrom(factory, "10.0.0.2");
+        (await ExceedLimitAsync(noisy)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+
+        // Act
+        var response = await quiet.PostAsync(Route, EmptyXml());
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Test]
+    public async Task RequestsFromTheSameIp_ShareOneBucketAcrossClients()
+    {
+        // Arrange
+        using var baseFactory = CreateFactory();
+        using var factory = baseFactory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services => services.AddSingleton<IStartupFilter, ClientIpStartupFilter>()));
+        using var first = CreateClientFrom(factory, "10.0.0.1");
+        using var second = CreateClientFrom(factory, "10.0.0.1");
+        (await ExceedLimitAsync(first)).StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+
+        // Act
+        var response = await second.PostAsync(Route, EmptyXml());
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    private static HttpClient CreateClientFrom(
+        Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> factory, string ip)
+    {
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add(ApiFactory.ApiKeyHeader, ApiFactory.TestApiKey);
+        client.DefaultRequestHeaders.Add(ClientIpStartupFilter.Header, ip);
+        return client;
+    }
+
+    // TestServer has no client address, so the test sets one from a header before rate limiting runs.
+    private sealed class ClientIpStartupFilter : IStartupFilter
+    {
+        public const string Header = "X-Test-Client-Ip";
+
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            app.Use(async (context, nextMiddleware) =>
+            {
+                if (context.Request.Headers.TryGetValue(Header, out var value)
+                    && IPAddress.TryParse(value.ToString(), out var address))
+                {
+                    context.Connection.RemoteIpAddress = address;
+                }
+
+                await nextMiddleware();
+            });
+            next(app);
+        };
     }
 }
