@@ -24,4 +24,4 @@ Paginação por offset: `page` (a partir de 1, padrão 1) e `pageSize` (de 1 a 1
 - O `OFFSET` custa proporcionalmente ao deslocamento: páginas muito profundas ficam lentas.
 - O `totalCount` vem de um `COUNT(*)` a cada requisição, e o custo cresce com o conjunto filtrado.
 - Inserções entre duas requisições deslocam as páginas seguintes: um item pode aparecer duas vezes ou ser pulado.
-- Os testes de carga que dariam os números para migrar para keyset ainda não foram feitos. Até lá, a decisão fica como está.
+- Medição com 5 000 documentos ([`loadtests/`](../../loadtests/README.md)): a última página leva 16 ms no p50 e 45 ms no p95, contra 6 ms no p50 da primeira. Nesse volume o `OFFSET` não justifica o keyset. A medição não cobre volumes maiores, e vale repeti-la com mais documentos antes de mudar de ideia.
