@@ -1,0 +1,7 @@
+# Usado junto com o docker-compose.yml da raiz (veja loadtests/run.sh).
+# O limite de 60 requisições por minuto por IP é para clientes reais; o k6 sairia
+# todo em 429 e mediria só o rate limiter.
+services:
+  api:
+    environment:
+      RateLimiting__PermitLimit: "1000000"

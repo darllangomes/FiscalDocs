@@ -352,9 +352,9 @@ Limitações, com o registro onde cada uma é explicada:
 - A migração na subida não tem trava: use uma réplica da API na primeira subida ([ADR 0008](docs/adr/0008-api-independente-do-broker.md)).
 - As linhas processadas da outbox não são removidas, e não há métrica de atraso da outbox nem sonda de saúde do Worker ([ADR 0006](docs/adr/0006-outbox-transacional-e-consumidor-idempotente.md)).
 - A DLQ não tem ferramenta de reprocessamento. Se a recuperação automática da conexão com o RabbitMQ desistir, só reiniciar o Worker resolve ([ADR 0007](docs/adr/0007-retry-com-ttl-dlq-e-recuperacao-do-rabbitmq.md)).
-- Ainda não há testes de carga.
+- Os testes de carga ([`loadtests/`](loadtests/README.md)) mostram que, num notebook de desenvolvimento, a ingestão de NFes de 23 KB sustenta 300 documentos por segundo (p95 de 55 ms) e satura entre 300 e 400. O gargalo não foi investigado.
 
-Próximos passos: suporte a NFSe ([ADR 0003](docs/adr/0003-nfe-e-cte-com-nfse-como-extensao.md)), testes de carga com k6 para decidir sobre paginação por keyset, cifrar o CPF, limpar a outbox e expor a métrica de atraso, e uma sonda de saúde para o Worker.
+Próximos passos: suporte a NFSe ([ADR 0003](docs/adr/0003-nfe-e-cte-com-nfse-como-extensao.md)), repetir a carga de consulta com um volume maior para reavaliar o keyset, cifrar o CPF, limpar a outbox e expor a métrica de atraso, e uma sonda de saúde para o Worker.
 
 ## Estrutura do repositório
 

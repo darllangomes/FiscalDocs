@@ -8,8 +8,13 @@ XMLs **fictícios** para desenvolvimento e testes. Nomes, CNPJ, CPF e valores s�
 | `nfe-cnpj-alfanumerico.xml` | NFe, emitente com CNPJ alfanumérico, destinatário CNPJ numérico |
 | `cte-cnpj-numerico.xml` | CTe, emitente numérico, destinatário CPF |
 | `cte-cnpj-alfanumerico.xml` | CTe, emitente e remetente alfanuméricos |
+| `nfe-realista-3itens.xml` | NFe no formato real (leiaute 4.00): minificada, 3 itens com ICMS, PIS e COFINS, transporte, pagamento, informações adicionais, assinatura e protocolo. Destinatário CNPJ alfanumérico. 11 KB |
+| `nfe-realista-250itens.xml` | O mesmo formato com 250 itens e destinatário CPF. 195 KB, abaixo dos 500 KB que as fontes citam como limite da mensagem |
+| `nfe-realista-990itens.xml` | O mesmo formato com 990 itens, o máximo do leiaute. 731 KB: passa dos 500 KB que algumas fontes citam como limite da mensagem, mas cabe em 1 MB e no limite de 2 MiB da API |
 | `invalido.xml` | XML mal formado (deve ser rejeitado como inválido) |
 | `malicioso-xxe.xml` | Contém `DOCTYPE` com entidade externa (deve ser rejeitado, nunca resolvido) |
+
+As duas NFes realistas são **sintéticas**: a estrutura segue o leiaute 4.00, mas a assinatura, o certificado, o protocolo e os dados são inventados (bytes aleatórios em base64, sem validade). Foram geradas por um script determinístico e não passam por uma SEFAZ.
 
 ## Dígitos verificadores
 

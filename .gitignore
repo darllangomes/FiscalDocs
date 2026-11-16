@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# k6 summaries
+loadtests/results/
+
 # User-specific files
 *.rsuser
 *.suo
