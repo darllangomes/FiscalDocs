@@ -149,6 +149,7 @@ Todas as rotas, exceto `/health/*`, exigem o header `X-Api-Key`. Os erros seguem
 | `POST /api/v1/documents` | Ingere um XML (`Content-Type: application/xml` ou `text/xml`, até 2 MiB). | `201` (novo) ou `200` (reenvio idêntico) | `409` (conteúdo diferente ou documento apagado), `413`, `415`, `422` |
 | `GET /api/v1/documents` | Lista paginada com filtros. | `200` | `400` |
 | `GET /api/v1/documents/{id}` | Detalhe do documento, com `ETag`. | `200` | `404` |
+| `GET /api/v1/documents/{id}/xml` | O XML guardado, em UTF-8, como anexo `<chave>.xml` e sem cache. **Não é mascarado.** | `200` | `404` |
 | `PATCH /api/v1/documents/{id}` | Altera `status` e/ou `notes`. Exige `If-Match`. | `200`, com o novo `ETag` | `400`, `404`, `412`, `415`, `428` |
 | `DELETE /api/v1/documents/{id}` | Apaga logicamente. O `If-Match` é opcional. | `204` | `404`, `412` |
 | `GET /health/live` | O processo está de pé. | `200` | |
@@ -290,8 +291,9 @@ O painel do RabbitMQ (`http://localhost:15672`) mostra as filas, as mensagens em
 - **Rate limiting** por IP (60 requisições por 60 s por padrão): `429` com `Retry-After`.
 - **XML hostil:** DTD proibido e sem resolução de entidades externas (XXE), limite de 5 milhões de caracteres no parser e de 2 MiB no corpo.
 - **Logs e erros:** nunca registram o XML, o corpo da requisição nem o CPF, e as respostas de erro não trazem stack trace. Testes de integração provam isso.
-- **CPF do destinatário:** nenhum endpoint o devolve, ele não entra no evento e não vai para os logs. Mas **fica guardado em texto puro** no banco (coluna `recipient_document` e dentro do XML original). Cifrá-lo é uma evolução prevista.
-- **CPF do emitente** (produtor rural pessoa física): a API o devolve mascarado (`***.982.247-**`) em `issuerDocument`, mas a **chave de acesso o carrega por inteiro** (com zeros à esquerda) e é o identificador público do documento, então a máscara não é sigilo. O CPF completo fica no banco (`IssuerDocument`), no evento e no agregado, e o filtro `issuerDocument=` o recebe na URL, que proxies podem registrar.
+- **CPF do destinatário:** os endpoints JSON não o devolvem, ele não entra no evento e não vai para os logs. Mas **fica guardado em texto puro** no banco (coluna `recipient_document` e dentro do XML original), e `GET /api/v1/documents/{id}/xml` devolve o XML por inteiro. Cifrá-lo é uma evolução prevista.
+- **CPF do emitente** (produtor rural pessoa física): a API o devolve mascarado (`***.982.247-**`) em `issuerDocument`, mas a **chave de acesso o carrega por inteiro** (com zeros à esquerda) e é o identificador público do documento, então a máscara não é sigilo. O CPF completo fica no banco (`IssuerDocument`), no evento e no agregado, e o filtro `issuerDocument=` o recebe na URL, que proxies podem registrar. O endpoint do XML também o devolve por inteiro.
+- **Download do XML:** quem tem a chave de API vê os CPFs completos do emitente e do destinatário. Não há escopos para restringi-lo. A resposta leva `Cache-Control: no-store`. O banco guarda o texto já decodificado, então um BOM ou uma declaração `encoding` diferente de UTF-8 no prólogo não são preservados: a resposta sai sempre em UTF-8, e o `charset` do cabeçalho prevalece sobre o prólogo.
 - **Segredos:** o `.env` fica fora do Git, o desenvolvimento usa user-secrets e o CI roda o `gitleaks`.
 
 Detalhes e limitações (chave única, proxy reverso, TLS) em [ADR 0011](docs/adr/0011-seguranca-e-dados-sensiveis.md).
@@ -343,7 +345,7 @@ Cada decisão tem um registro com contexto, alternativas descartadas e o custo a
 Limitações, com o registro onde cada uma é explicada:
 
 - CNPJ com todos os dígitos iguais não é rejeitado ([ADR 0004](docs/adr/0004-cnpj-e-chave-de-acesso-alfanumericos.md)).
-- O XML original é guardado, mas ainda não há endpoint para baixá-lo.
+- O XML baixado é o texto guardado em UTF-8, não os bytes originais: BOM e declaração `encoding` diferente de UTF-8 não são preservados ([ADR 0011](docs/adr/0011-seguranca-e-dados-sensiveis.md)).
 - O POST aceita só o XML no corpo (`application/xml` ou `text/xml`), sem `multipart/form-data`.
 - Não há endpoint para restaurar um documento apagado, e reenviá-lo dá `409` ([ADR 0009](docs/adr/0009-concorrencia-otimista-patch-e-soft-delete.md)).
 - `If-Match` aceita um único ETag forte; lista, `*` e ETag fraco dão `412` ([ADR 0009](docs/adr/0009-concorrencia-otimista-patch-e-soft-delete.md)).

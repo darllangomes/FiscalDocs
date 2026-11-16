@@ -1,3 +1,4 @@
+using FiscalDocs.Application.Documents;
 using FiscalDocs.Domain.Entities;
 using FiscalDocs.Domain.Enums;
 using FiscalDocs.Domain.ValueObjects;
@@ -145,5 +146,48 @@ public class FiscalDocumentRepositoryTests
     {
         // Act & Assert
         (await FindAsync(NFeKey)).Should().BeNull();
+    }
+
+    // ---------- FindXmlByIdAsync ----------
+
+    private static async Task<DocumentXml?> FindXmlAsync(Guid id)
+    {
+        await using var context = InfrastructureFixture.CreateContext();
+        return await new FiscalDocumentRepository(context).FindXmlByIdAsync(id, CancellationToken.None);
+    }
+
+    [Test]
+    public async Task FindXml_ExistingDocument_ReturnsTheStoredXmlAndTheAccessKey()
+    {
+        // Arrange
+        var document = Build();
+        await TryAddAsync(document);
+
+        // Act
+        var xml = await FindXmlAsync(document.Id);
+
+        // Assert
+        xml.Should().NotBeNull();
+        xml!.Xml.Should().Be("<a/>");
+        xml.AccessKey.Should().Be(NFeKey);
+    }
+
+    [Test]
+    public async Task FindXml_UnknownId_ReturnsNull()
+    {
+        // Act & Assert
+        (await FindXmlAsync(Guid.NewGuid())).Should().BeNull();
+    }
+
+    [Test]
+    public async Task FindXml_SoftDeletedDocument_ReturnsNull()
+    {
+        // Arrange
+        var document = Build();
+        document.MarkAsDeleted(Now.AddMinutes(1));
+        await TryAddAsync(document);
+
+        // Act & Assert
+        (await FindXmlAsync(document.Id)).Should().BeNull();
     }
 }

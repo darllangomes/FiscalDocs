@@ -18,7 +18,7 @@ A API recebe XML de terceiros e guarda dados fiscais. O XML contém o CPF do des
 
 **Dados pessoais.** O CPF do destinatário:
 
-- não é exposto por nenhum endpoint, e o XML bruto não tem endpoint de leitura (o nome e a UF do destinatário aparecem no detalhe, `GET /api/v1/documents/{id}`, mas não na listagem);
+- não é exposto pelos endpoints JSON (o nome e a UF do destinatário aparecem no detalhe, `GET /api/v1/documents/{id}`, mas não na listagem); o único endpoint que o devolve é o do XML, descrito abaixo;
 - não entra no evento do RabbitMQ;
 - não é registrado em log;
 - **fica guardado em texto puro**, na coluna `recipient_document` e dentro do XML original, que é a fonte legal e precisa ser preservado.
@@ -30,6 +30,8 @@ O CPF do **emitente** (produtor rural pessoa física) tem outro tratamento, porq
 - o banco (`IssuerDocument`), o evento e o agregado diário levam o CPF completo, porque o agregado precisa de uma chave estável por emitente;
 - o filtro `issuerDocument=` recebe o CPF completo na URL, que proxies e logs de acesso podem registrar; a API não o registra (há teste);
 - fica em texto puro, como o do destinatário.
+
+**Download do XML.** `GET /api/v1/documents/{id}/xml` devolve o XML guardado, porque ele é a fonte legal do documento e precisa poder ser recuperado. Ele **não é mascarado**: o CPF do emitente e o do destinatário saem por inteiro, e a máscara vale só para os campos JSON. A mesma chave de API dá acesso, sem escopos para restringi-lo. A resposta sai como anexo `<chave>.xml`, com `Cache-Control: no-store`, e o download não registra o corpo nem o CPF (há teste). O banco guarda o texto já decodificado, então a resposta é o texto em UTF-8 sem BOM, não os bytes originais: uma declaração `encoding` diferente no prólogo não é preservada, e o `charset` do cabeçalho HTTP prevalece sobre ela.
 
 **Segredos.** O `.env` fica fora do Git (o repositório traz só o `.env.example`), o desenvolvimento usa user-secrets, e o CI roda o `gitleaks`.
 
@@ -45,3 +47,4 @@ O CPF do **emitente** (produtor rural pessoa física) tem outro tratamento, porq
 - **Atrás de um proxy reverso**, o IP de origem visto pela API é o do proxy, e todos os clientes dividiriam o mesmo balde do rate limit. Em produção é preciso configurar `ForwardedHeaders` com `KnownProxies` ou `KnownNetworks`. O repositório não faz isso.
 - **TLS.** O `UseHttpsRedirection` está ativo (exceto em `/health`), mas o container escuta só HTTP na porta 8080 e não há HSTS. Em produção, o TLS deve terminar num proxy reverso.
 - **CPF em texto puro** (destinatário e emitente, este também no evento e no agregado). Depende da proteção do próprio banco, do disco e do broker.
+- **O endpoint do XML contorna a máscara.** Quem tem a chave de API lê todos os CPFs. Restringi-lo exigiria escopos de chave, que não existem.
