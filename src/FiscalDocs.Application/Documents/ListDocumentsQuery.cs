@@ -9,7 +9,7 @@ public sealed record ListDocumentsQuery(
     int PageSize,
     DocumentType? Type = null,
     DocumentStatus? Status = null,
-    Cnpj? IssuerCnpj = null,
+    TaxId? IssuerDocument = null,
     string? IssuerState = null,
     DateOnly? IssuedFrom = null,
     DateOnly? IssuedTo = null);

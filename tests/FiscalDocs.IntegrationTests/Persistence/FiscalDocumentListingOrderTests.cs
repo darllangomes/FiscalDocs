@@ -35,7 +35,7 @@ public class FiscalDocumentListingOrderTests
         var accessKey = AccessKey.Parse(key);
         return FiscalDocument.Create(
             DocumentType.NFe, accessKey, "1001", "1", issueDate,
-            accessKey.IssuerCnpj, "EMPRESA FICTICIA LTDA", "PE",
+            TaxId.Parse(accessKey.Value[6..20]), "EMPRESA FICTICIA LTDA", "PE",
             null, null, null, 100.00m, "<a/>", Now);
     }
 

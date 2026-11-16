@@ -12,8 +12,8 @@ Paginação por offset: `page` (a partir de 1, padrão 1) e `pageSize` (de 1 a 1
 
 - **Ordenação fixa:** data de emissão decrescente e, como desempate, `Id` crescente. Sem o desempate, documentos com a mesma data poderiam repetir ou sumir entre páginas.
 - **Projeção:** a listagem devolve um resumo (`DocumentSummary`), sem o XML bruto nem dados do destinatário, e lê com `AsNoTracking`.
-- **Filtros:** `type`, `status`, `issuerCnpj` (aceita máscara e minúsculas), `issuerState`, `issuedFrom` e `issuedTo` (datas inclusivas, interpretadas em UTC). Um parâmetro inválido dá `400` com `ValidationProblemDetails`.
-- **Índices:** `(issuer_cnpj, issue_date)`, `(issuer_state, issue_date)` e `issue_date`.
+- **Filtros:** `type`, `status`, `issuerDocument` (CNPJ ou CPF; aceita máscara e minúsculas; o nome antigo `issuerCnpj` dá `400`, para não devolver a lista inteira a um cliente que ainda o envia), `issuerState`, `issuedFrom` e `issuedTo` (datas inclusivas, interpretadas em UTC). Um parâmetro inválido dá `400` com `ValidationProblemDetails`.
+- **Índices:** `(issuer_document, issue_date)`, `(issuer_state, issue_date)` e `issue_date`.
 
 ## Alternativas descartadas
 

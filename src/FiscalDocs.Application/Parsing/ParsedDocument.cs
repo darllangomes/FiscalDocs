@@ -10,7 +10,7 @@ public sealed record ParsedDocument(
     string Number,
     string Series,
     DateTimeOffset IssueDate,
-    Cnpj IssuerCnpj,
+    TaxId IssuerDocument,
     string IssuerName,
     string IssuerState,
     string? RecipientDocument,

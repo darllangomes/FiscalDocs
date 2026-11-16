@@ -27,7 +27,7 @@ public class OutboxPersistenceTests
         return FiscalDocument.Create(
             DocumentType.NFe, accessKey, "1001", "1",
             new DateTimeOffset(2026, 8, 14, 10, 30, 0, TimeSpan.FromHours(-3)),
-            accessKey.IssuerCnpj, "EMPRESA FICTICIA LTDA", "PE",
+            TaxId.Parse(accessKey.Value[6..20]), "EMPRESA FICTICIA LTDA", "PE",
             "12345678909", "CLIENTE FICTICIO", "SP",
             1500.00m, "<a/>", Now);
     }
@@ -75,7 +75,7 @@ public class OutboxPersistenceTests
         @event.MessageId.Should().Be(message.Id);
         @event.DocumentId.Should().Be(document.Id);
         @event.Type.Should().Be(DocumentType.NFe);
-        @event.IssuerCnpj.Should().Be("11222333000181");
+        @event.IssuerDocument.Should().Be("11222333000181");
         @event.IssuerState.Should().Be("PE");
         @event.IssueDate.Should().Be(document.IssueDate);
         @event.TotalAmount.Should().Be(1500.00m);

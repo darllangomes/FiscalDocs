@@ -28,7 +28,7 @@ public class DocumentIngestedProcessorTests
             MessageId: messageId ?? Guid.NewGuid(),
             DocumentId: Guid.NewGuid(),
             Type: DocumentType.NFe,
-            IssuerCnpj: cnpj,
+            IssuerDocument: cnpj,
             IssuerState: state,
             IssueDate: issueDate ?? new DateTimeOffset(2026, 8, 14, 10, 30, 0, TimeSpan.Zero),
             TotalAmount: total,
@@ -65,7 +65,7 @@ public class DocumentIngestedProcessorTests
         // Assert
         var aggregate = (await AggregatesAsync()).Should().ContainSingle().Subject;
         aggregate.Date.Should().Be(new DateOnly(2026, 8, 14));
-        aggregate.IssuerCnpj.Should().Be("11222333000181");
+        aggregate.IssuerDocument.Should().Be("11222333000181");
         aggregate.IssuerState.Should().Be("PE");
         aggregate.DocumentCount.Should().Be(1);
         aggregate.TotalAmount.Should().Be(1500.00m);

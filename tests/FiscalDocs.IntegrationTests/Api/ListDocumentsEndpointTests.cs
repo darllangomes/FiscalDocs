@@ -100,7 +100,7 @@ public class ListDocumentsEndpointTests
         first.GetProperty("id").GetGuid().Should().NotBeEmpty();
         first.GetProperty("type").GetString().Should().Be("CTe");
         first.GetProperty("status").GetString().Should().Be("Received");
-        first.GetProperty("issuerCnpj").GetString().Should().Be("7K9X2M4P000144");
+        first.GetProperty("issuerDocument").GetString().Should().Be("7K9X2M4P000144");
         first.GetProperty("issuerState").GetString().Should().Be("SP");
         first.TryGetProperty("rawXml", out _).Should().BeFalse();
         first.TryGetProperty("notes", out _).Should().BeFalse();
@@ -150,8 +150,8 @@ public class ListDocumentsEndpointTests
     [TestCase("type=NFe", new[] { "2002", "1001" })]
     [TestCase("issuerState=SP", new[] { "4004", "3003" })]
     [TestCase("issuerState=pe", new[] { "2002", "1001" })]                       // sem diferenciar caixa
-    [TestCase("issuerCnpj=12ABC34501DE35", new[] { "2002" })]
-    [TestCase("issuerCnpj=12.abc.345/01de-35", new[] { "2002" })]                // mesma normalização do Cnpj.TryParse
+    [TestCase("issuerDocument=12ABC34501DE35", new[] { "2002" })]
+    [TestCase("issuerDocument=12.abc.345/01de-35", new[] { "2002" })]                // mesma normalização do Cnpj.TryParse
     [TestCase("issuedFrom=2026-08-15&issuedTo=2026-08-20", new[] { "2002", "3003" })] // os dois limites são inclusivos
     [TestCase("issuedFrom=2026-08-21", new[] { "4004" })]
     [TestCase("issuedTo=2026-08-14", new[] { "1001" })]
@@ -165,6 +165,56 @@ public class ListDocumentsEndpointTests
         // Assert
         NumbersOf(list).Should().Equal(expected);
         list.GetProperty("totalCount").GetInt32().Should().Be(expected.Length);
+    }
+
+    private async Task IngestIndividualIssuerSampleAsync()
+    {
+        var content = new StringContent(
+            SampleFiles.ReadAllText("nfe-emitente-cpf.xml"), Encoding.UTF8, "application/xml");
+        (await _client.PostAsync(Route, content)).StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [TestCase("issuerDocument=52998224725")]
+    [TestCase("issuerDocument=529.982.247-25")]
+    public async Task IndividualIssuer_CanBeFilteredByCpf_AndIsListedMasked(string query)
+    {
+        // Arrange
+        await IngestIndividualIssuerSampleAsync();
+
+        // Act
+        var list = await ListAsync(query);
+
+        // Assert
+        NumbersOf(list).Should().Equal("42");
+        list.GetProperty("items")[0].GetProperty("issuerDocument").GetString().Should().Be("***.982.247-**");
+        // A chave de acesso carrega o CPF e é o identificador público do documento; fora dela o CPF não aparece.
+        var accessKey = list.GetProperty("items")[0].GetProperty("accessKey").GetString()!;
+        list.GetRawText().Replace(accessKey, "").Should().NotContain("52998224725");
+    }
+
+    [Test]
+    public async Task FilteringByACnpj_DoesNotReturnAnIndividualIssuer()
+    {
+        // Arrange
+        await IngestIndividualIssuerSampleAsync();
+
+        // Act
+        var list = await ListAsync("issuerDocument=11222333000181");
+
+        // Assert
+        NumbersOf(list).Should().Equal("1001");
+    }
+
+    [TestCase("issuerDocument=123")]
+    [TestCase("issuerDocument=52998224726")]     // CPF com DV errado
+    [TestCase("issuerDocument=11222333000182")]  // CNPJ com DV errado
+    public async Task InvalidIssuerDocument_Returns400(string query)
+    {
+        // Act
+        var response = await _client.GetAsync($"{Route}?{query}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Test]
@@ -206,7 +256,8 @@ public class ListDocumentsEndpointTests
     [TestCase("type=XYZ")]
     [TestCase("status=Foo")]
     [TestCase("issuedFrom=not-a-date")]
-    [TestCase("issuerCnpj=123")]
+    [TestCase("issuerDocument=123")]
+    [TestCase("issuerCnpj=11222333000181")]   // nome antigo: rejeitado, não ignorado
     [TestCase("issuerState=SPX")]
     [TestCase("issuedFrom=2026-08-20&issuedTo=2026-08-10")]
     public async Task InvalidQuery_Returns400ProblemDetails(string query)

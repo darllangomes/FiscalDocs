@@ -41,7 +41,7 @@ namespace FiscalDocs.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("IssueDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("IssuerCnpj")
+                    b.Property<string>("IssuerDocument")
                         .IsRequired()
                         .HasMaxLength(14)
                         .HasColumnType("character varying(14)");
@@ -121,7 +121,7 @@ namespace FiscalDocs.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("IssueDate");
 
-                    b.HasIndex("IssuerCnpj", "IssueDate");
+                    b.HasIndex("IssuerDocument", "IssueDate");
 
                     b.HasIndex("IssuerState", "IssueDate");
 
@@ -134,10 +134,10 @@ namespace FiscalDocs.Infrastructure.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("date");
 
-                    b.Property<string>("IssuerCnpj")
+                    b.Property<string>("IssuerDocument")
                         .HasMaxLength(14)
                         .HasColumnType("character varying(14)")
-                        .HasColumnName("issuer_cnpj");
+                        .HasColumnName("issuer_document");
 
                     b.Property<string>("IssuerState")
                         .HasMaxLength(2)
@@ -153,7 +153,7 @@ namespace FiscalDocs.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_amount");
 
-                    b.HasKey("Date", "IssuerCnpj", "IssuerState");
+                    b.HasKey("Date", "IssuerDocument", "IssuerState");
 
                     b.ToTable("daily_issuer_aggregates", (string)null);
                 });

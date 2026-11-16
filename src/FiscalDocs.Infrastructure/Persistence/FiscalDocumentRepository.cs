@@ -43,7 +43,7 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
         Guid.NewGuid(),
         document.Id,
         document.Type,
-        document.IssuerCnpj.Value,
+        document.IssuerDocument.Value,
         document.IssuerState,
         document.IssueDate,
         document.TotalAmount,
@@ -63,7 +63,7 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
             .Where(d => d.Id == id)
             .Select(d => new DocumentDetails(
                 d.Id, d.Type, d.Status, d.AccessKey.Value, d.Number, d.Series, d.IssueDate,
-                d.IssuerCnpj.Value, d.IssuerName, d.IssuerState, d.RecipientName, d.RecipientState,
+                d.IssuerDocument, d.IssuerName, d.IssuerState, d.RecipientName, d.RecipientState,
                 d.TotalAmount, d.Notes, d.CreatedAt, d.UpdatedAt,
                 EF.Property<uint>(d, "xmin")))
             .FirstOrDefaultAsync(cancellationToken);
@@ -74,7 +74,7 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
 
         if (query.Type is { } type) documents = documents.Where(d => d.Type == type);
         if (query.Status is { } status) documents = documents.Where(d => d.Status == status);
-        if (query.IssuerCnpj is { } cnpj) documents = documents.Where(d => d.IssuerCnpj == cnpj);
+        if (query.IssuerDocument is { } issuer) documents = documents.Where(d => d.IssuerDocument == issuer);
         if (query.IssuerState is { } state) documents = documents.Where(d => d.IssuerState == state);
         if (query.IssuedFrom is { } from)
         {
@@ -96,7 +96,7 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
             .Take(query.PageSize)
             .Select(d => new DocumentSummary(
                 d.Id, d.Type, d.Status, d.AccessKey.Value, d.Number, d.Series, d.IssueDate,
-                d.IssuerCnpj.Value, d.IssuerName, d.IssuerState, d.TotalAmount, d.UpdatedAt))
+                d.IssuerDocument, d.IssuerName, d.IssuerState, d.TotalAmount, d.UpdatedAt))
             .ToListAsync(cancellationToken);
 
         return new PagedResult<DocumentSummary>(items, query.Page, query.PageSize, total);

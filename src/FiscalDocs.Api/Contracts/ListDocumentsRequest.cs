@@ -14,6 +14,9 @@ public sealed class ListDocumentsRequest
     public int PageSize { get; init; } = DefaultPageSize;
     public string? Type { get; init; }
     public string? Status { get; init; }
+    public string? IssuerDocument { get; init; }
+
+    // Nome antigo do filtro. Ignorá-lo em silêncio devolveria a lista inteira a um cliente que ainda o envia.
     public string? IssuerCnpj { get; init; }
     public string? IssuerState { get; init; }
     public DateOnly? IssuedFrom { get; init; }
@@ -30,9 +33,11 @@ public sealed class ListDocumentsRequest
         var type = ParseEnum<DocumentType>(Type, nameof(Type), errors);
         var status = ParseEnum<DocumentStatus>(Status, nameof(Status), errors);
 
-        Cnpj? cnpj = null;
-        if (IssuerCnpj is not null && !Cnpj.TryParse(IssuerCnpj, out cnpj))
-            errors.AddModelError(nameof(IssuerCnpj), "issuerCnpj is not a valid CNPJ.");
+        TaxId? issuer = null;
+        if (IssuerDocument is not null && !TaxId.TryParse(IssuerDocument, out issuer))
+            errors.AddModelError(nameof(IssuerDocument), "issuerDocument is not a valid CNPJ or CPF.");
+        if (IssuerCnpj is not null)
+            errors.AddModelError(nameof(IssuerCnpj), "issuerCnpj was renamed to issuerDocument.");
 
         string? state = null;
         if (IssuerState is not null)
@@ -47,7 +52,7 @@ public sealed class ListDocumentsRequest
             errors.AddModelError(nameof(IssuedFrom), "issuedFrom must not be after issuedTo.");
 
         return errors.IsValid
-            ? new ListDocumentsQuery(Page, PageSize, type, status, cnpj, state, IssuedFrom, IssuedTo)
+            ? new ListDocumentsQuery(Page, PageSize, type, status, issuer, state, IssuedFrom, IssuedTo)
             : null;
     }
 

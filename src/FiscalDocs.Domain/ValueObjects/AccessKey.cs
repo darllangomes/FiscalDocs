@@ -5,15 +5,25 @@ namespace FiscalDocs.Domain.ValueObjects;
 
 public sealed record AccessKey
 {
+    // Um CPF ocupa as 11 últimas posições do campo do emitente, que tem 14.
+    private const string CpfPadding = "000";
+
     public string Value { get; }
     public string Model => Value[20..22];
 
-    public Cnpj IssuerCnpj { get; }
+    // Posições 7 a 20: CNPJ do emitente ou CPF com zeros à esquerda. Um CNPJ também pode começar com 000,
+    // então a chave sozinha não diz o tipo: quem decide é o elemento do XML (IsIssuedBy).
+    private string IssuerField => Value[6..20];
 
-    private AccessKey(string value, Cnpj issuerCnpj)
+    private AccessKey(string value) => Value = value;
+
+    public bool IsIssuedBy(TaxId issuer)
     {
-        Value = value;
-        IssuerCnpj = issuerCnpj;
+        ArgumentNullException.ThrowIfNull(issuer);
+
+        return issuer.IsCpf
+            ? IssuerField == CpfPadding + issuer.Value
+            : IssuerField == issuer.Value;
     }
 
     public static AccessKey Parse(string? input) =>
@@ -38,10 +48,15 @@ public sealed record AccessKey
         {
             return false;
         }
-        if (!Cnpj.TryParse(normalized[6..20], out var issuerCnpj))
+
+        var issuerField = normalized[6..20];
+        var validIssuer = Cnpj.TryParse(issuerField, out _) ||
+                          (issuerField.StartsWith(CpfPadding, StringComparison.Ordinal) &&
+                           Cpf.TryParse(issuerField[CpfPadding.Length..], out _));
+        if (!validIssuer)
             return false;
 
-        key = new AccessKey(normalized, issuerCnpj);
+        key = new AccessKey(normalized);
         return true;
     }
 }

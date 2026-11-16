@@ -15,7 +15,7 @@ A API guarda documentos fiscais e precisa:
 
 PostgreSQL 16, acessado por EF Core 8 com Npgsql.
 
-- Os campos filtráveis são colunas tipadas e indexadas: `access_key` (único), `(issuer_cnpj, issue_date)`, `(issuer_state, issue_date)` e `issue_date`. O XML bruto fica numa coluna `text` da mesma tabela, então não existe um segundo banco.
+- Os campos filtráveis são colunas tipadas e indexadas: `access_key` (único), `(issuer_document, issue_date)`, `(issuer_state, issue_date)` e `issue_date`. O XML bruto fica numa coluna `text` da mesma tabela, então não existe um segundo banco.
 - O índice único em `access_key` é o árbitro da idempotência da ingestão ([ADR 0005](0005-idempotencia-da-ingestao.md)).
 - A coluna de sistema `xmin` é o token de concorrência otimista ([ADR 0009](0009-concorrencia-otimista-patch-e-soft-delete.md)).
 - A outbox usa `FOR UPDATE SKIP LOCKED`, e o consumidor usa `INSERT … ON CONFLICT DO NOTHING` para descartar mensagens repetidas ([ADR 0006](0006-outbox-transacional-e-consumidor-idempotente.md)).

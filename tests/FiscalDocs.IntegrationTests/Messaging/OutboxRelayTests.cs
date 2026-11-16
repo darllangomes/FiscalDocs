@@ -62,7 +62,7 @@ public class OutboxRelayTests
         MessageId: Guid.NewGuid(),
         DocumentId: Guid.NewGuid(),
         Type: DocumentType.NFe,
-        IssuerCnpj: "11222333000181",
+        IssuerDocument: "11222333000181",
         IssuerState: "PE",
         IssueDate: new DateTimeOffset(2026, 8, 14, 10, 30, 0, TimeSpan.Zero),
         TotalAmount: 1500.00m,

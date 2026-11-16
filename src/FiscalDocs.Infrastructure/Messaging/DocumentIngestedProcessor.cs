@@ -32,9 +32,9 @@ public sealed class DocumentIngestedProcessor(FiscalDocsDbContext context, TimeP
         // Upsert atômico em SQL: sem ler e gravar em memória, então eventos concorrentes não perdem atualizações.
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
-            INSERT INTO daily_issuer_aggregates (date, issuer_cnpj, issuer_state, document_count, total_amount)
-            VALUES ({date}, {@event.IssuerCnpj}, {@event.IssuerState}, 1, {@event.TotalAmount})
-            ON CONFLICT (date, issuer_cnpj, issuer_state) DO UPDATE
+            INSERT INTO daily_issuer_aggregates (date, issuer_document, issuer_state, document_count, total_amount)
+            VALUES ({date}, {@event.IssuerDocument}, {@event.IssuerState}, 1, {@event.TotalAmount})
+            ON CONFLICT (date, issuer_document, issuer_state) DO UPDATE
             SET document_count = daily_issuer_aggregates.document_count + 1,
                 total_amount = daily_issuer_aggregates.total_amount + EXCLUDED.total_amount
             """,
