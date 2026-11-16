@@ -1,0 +1,13 @@
+# Texto sempre com LF no repositório e na cópia de trabalho, em qualquer sistema.
+# Combina com o end_of_line = lf do .editorconfig; sem isso, o autocrlf do Windows
+# gera CRLF na cópia local e o "dotnet format --verify-no-changes" falha.
+* text=auto eol=lf
+
+# Scripts e Dockerfile precisam de LF para rodar no Linux (um CR no fim da linha quebra o shebang).
+*.sh text eol=lf
+Dockerfile text eol=lf
+
+# Binários: nunca converter.
+*.png binary
+*.jpg binary
+*.ico binary

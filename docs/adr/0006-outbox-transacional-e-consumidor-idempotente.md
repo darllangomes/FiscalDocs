@@ -27,5 +27,6 @@ Cada documento ingerido gera um evento no RabbitMQ. Gravar no banco e publicar n
 - A garantia é *at-least-once* de ponta a ponta, e a duplicação é absorvida pelo consumidor.
 - A entrega ganha uma latência de até o intervalo de varredura. Se o broker cair, a API segue aceitando documentos e os eventos esperam na outbox ([ADR 0008](0008-api-independente-do-broker.md)).
 - A ordem de entrega não é garantida de ponta a ponta: uma mensagem que passa pela fila de retry chega depois das seguintes. O agregado é uma soma, então não depende da ordem.
-- As linhas da outbox já processadas **não são removidas**, e a tabela só cresce. A limpeza é uma pendência.
+- As linhas já publicadas ficam na outbox por `Outbox:RetentionDays` (7 dias) e depois são apagadas pelo Worker (`OutboxCleanupService`, a cada `Outbox:CleanupIntervalMinutes`, 60). `OutboxCleaner` apaga em lotes de `Outbox:CleanupBatchSize` (1000) as linhas com `processed_at` estritamente mais antigo que o limite, e um índice parcial em `processed_at` evita varrer a tabela. **Mensagens pendentes nunca são apagadas.** A retenção serve de trilha de depuração: depois dela, uma mensagem já publicada não pode mais ser reenviada a partir da outbox.
+- A tabela `processed_messages`, do consumidor, também ganha uma linha por evento e **ainda não é limpa**. Apagar um id cedo demais deixaria uma reentrega duplicar o agregado, então a retenção dela precisa ser maior que o maior atraso possível de uma reentrega (retry e DLQ).
 - Ainda não há métrica de atraso da outbox nem sonda de saúde do Worker.

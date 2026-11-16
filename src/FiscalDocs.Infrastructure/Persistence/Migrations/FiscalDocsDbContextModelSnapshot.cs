@@ -185,6 +185,10 @@ namespace FiscalDocs.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProcessedAt")
+                        .HasDatabaseName("IX_outbox_messages_processed")
+                        .HasFilter("processed_at IS NOT NULL");
+
                     b.HasIndex("OccurredAt", "Id")
                         .HasDatabaseName("IX_outbox_messages_pending")
                         .HasFilter("processed_at IS NULL");
