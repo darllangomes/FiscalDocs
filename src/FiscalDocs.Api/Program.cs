@@ -9,6 +9,7 @@ using FiscalDocs.Api.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +17,35 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "FiscalDocs API",
+        Version = "v1",
+        Description = "Ingestão e consulta de documentos fiscais (NFe e CTe) a partir do XML."
+    });
+
+    options.AddSecurityDefinition(ApiKeyAuthenticationHandler.SchemeName, new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Name = ApiKeyAuthenticationHandler.HeaderName,
+        Description = "Chave de API enviada no header X-Api-Key."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecurityScheme
+        {
+            Reference = new OpenApiReference
+            {
+                Type = ReferenceType.SecurityScheme,
+                Id = ApiKeyAuthenticationHandler.SchemeName
+            }
+        }] = []
+    });
+});
 builder.Services.AddApplication().AddInfrastructure(builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -56,7 +85,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// As sondas de saúde chegam por HTTP simples e não podem ser redirecionadas.
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments(HealthExtensions.BasePath),
+    branch => branch.UseHttpsRedirection());
 
 app.UseRateLimiter();
 app.UseAuthentication();
