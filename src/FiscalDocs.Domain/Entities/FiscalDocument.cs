@@ -20,7 +20,7 @@ public sealed class FiscalDocument
     public string Number { get; private set; } = null!;
     public string Series { get; private set; } = null!;
     public DateTimeOffset IssueDate { get; private set; }
-    public Cnpj IssuerCnpj { get; private set; } = null!;
+    public TaxId IssuerDocument { get; private set; } = null!;
     public string IssuerName { get; private set; } = null!;
     public string IssuerState { get; private set; } = null!;
     public string? RecipientDocument { get; private set; }
@@ -43,7 +43,7 @@ public sealed class FiscalDocument
         string number,
         string series,
         DateTimeOffset issueDate,
-        Cnpj issuerCnpj,
+        TaxId issuerDocument,
         string issuerName,
         string issuerState,
         string? recipientDocument,
@@ -55,7 +55,7 @@ public sealed class FiscalDocument
     )
     {
         ArgumentNullException.ThrowIfNull(accessKey);
-        ArgumentNullException.ThrowIfNull(issuerCnpj);
+        ArgumentNullException.ThrowIfNull(issuerDocument);
         ArgumentException.ThrowIfNullOrWhiteSpace(number);
         ArgumentException.ThrowIfNullOrWhiteSpace(series);
         ArgumentException.ThrowIfNullOrWhiteSpace(issuerName);
@@ -73,9 +73,9 @@ public sealed class FiscalDocument
         {
             throw new ArgumentException("Access key model does not match the document type.", nameof(accessKey));
         }
-        if (accessKey.IssuerCnpj != issuerCnpj)
+        if (!accessKey.IsIssuedBy(issuerDocument))
         {
-            throw new ArgumentException("Issuer CNPJ does not match the access key.", nameof(issuerCnpj));
+            throw new ArgumentException("Issuer document does not match the access key.", nameof(issuerDocument));
         }
 
         var state = issuerState?.Trim() ?? string.Empty;
@@ -92,7 +92,7 @@ public sealed class FiscalDocument
             Number = number.Trim(),
             Series = series.Trim(),
             IssueDate = issueDate,
-            IssuerCnpj = issuerCnpj,
+            IssuerDocument = issuerDocument,
             IssuerName = issuerName.Trim(),
             IssuerState = state.ToUpperInvariant(),
             RecipientDocument = recipientDocument,

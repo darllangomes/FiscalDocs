@@ -11,6 +11,7 @@ XMLs **fictícios** para desenvolvimento e testes. Nomes, CNPJ, CPF e valores s�
 | `nfe-realista-3itens.xml` | NFe no formato real (leiaute 4.00): minificada, 3 itens com ICMS, PIS e COFINS, transporte, pagamento, informações adicionais, assinatura e protocolo. Destinatário CNPJ alfanumérico. 11 KB |
 | `nfe-realista-250itens.xml` | O mesmo formato com 250 itens e destinatário CPF. 195 KB, abaixo dos 500 KB que as fontes citam como limite da mensagem |
 | `nfe-realista-990itens.xml` | O mesmo formato com 990 itens, o máximo do leiaute. 731 KB: passa dos 500 KB que algumas fontes citam como limite da mensagem, mas cabe em 1 MB e no limite de 2 MiB da API |
+| `nfe-emitente-cpf.xml` | NFe de produtor rural pessoa física: o emitente é um CPF (`<emit><CPF>`), a chave de acesso leva o CPF com zeros à esquerda e a série é 920. Destinatário CNPJ |
 | `invalido.xml` | XML mal formado (deve ser rejeitado como inválido) |
 | `malicioso-xxe.xml` | Contém `DOCTYPE` com entidade externa (deve ser rejeitado, nunca resolvido) |
 

@@ -16,7 +16,7 @@ public class FiscalDocumentTests
     private static FiscalDocument Build(
         DocumentType type = DocumentType.NFe,
         string key = NFeKey,
-        string? issuerCnpj = null,
+        string? issuerDocument = null,
         string number = "1001",
         string series = "1",
         string issuerName = "EMPRESA FICTICIA NUMERICA LTDA",
@@ -28,12 +28,12 @@ public class FiscalDocumentTests
         string rawXml = "<a/>")
     {
         var accessKey = AccessKey.Parse(key);
-        var cnpj = issuerCnpj is null ? accessKey.IssuerCnpj : Cnpj.Parse(issuerCnpj);
+        var issuer = TaxId.Parse(issuerDocument ?? key[6..20]);
 
         return FiscalDocument.Create(
             type, accessKey, number, series,
             new DateTimeOffset(2026, 8, 14, 10, 30, 0, TimeSpan.FromHours(-3)),
-            cnpj, issuerName, issuerState,
+            issuer, issuerName, issuerState,
             recipientDocument, recipientName, recipientState,
             totalAmount, rawXml, Now);
     }
@@ -52,7 +52,7 @@ public class FiscalDocumentTests
         doc.AccessKey.Value.Should().Be(NFeKey);
         doc.Number.Should().Be("1001");
         doc.Series.Should().Be("1");
-        doc.IssuerCnpj.Value.Should().Be("11222333000181");
+        doc.IssuerDocument.Value.Should().Be("11222333000181");
         doc.IssuerName.Should().Be("EMPRESA FICTICIA NUMERICA LTDA");
         doc.IssuerState.Should().Be("PE");
         doc.RecipientDocument.Should().Be("12345678909");
@@ -62,6 +62,36 @@ public class FiscalDocumentTests
         doc.IsDeleted.Should().BeFalse();
         doc.CreatedAt.Should().Be(Now);
         doc.UpdatedAt.Should().Be(Now);
+    }
+
+    private const string NFeCpfIssuerKey = "51260800052998224725559200000000421876543214";
+
+    private static FiscalDocument BuildFromAnIndividualIssuer(string issuerDocument) =>
+        FiscalDocument.Create(
+            DocumentType.NFe, AccessKey.Parse(NFeCpfIssuerKey), "42", "920",
+            new DateTimeOffset(2026, 8, 18, 8, 0, 0, TimeSpan.FromHours(-4)),
+            TaxId.Parse(issuerDocument), "PRODUTOR RURAL FICTICIO", "MT",
+            null, null, null, 3200.00m, "<a/>", Now);
+
+    [Test]
+    public void Create_IndividualIssuer_KeepsTheCpfAsIssuerDocument()
+    {
+        // Act
+        var doc = BuildFromAnIndividualIssuer("52998224725");
+
+        // Assert
+        doc.IssuerDocument.Value.Should().Be("52998224725");
+        doc.IssuerDocument.IsCpf.Should().BeTrue();
+    }
+
+    [Test]
+    public void Create_IssuerCpfDifferentFromTheAccessKey_ThrowsArgumentException()
+    {
+        // Act
+        var act = () => BuildFromAnIndividualIssuer("12345678909");
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
     }
 
     [Test]
@@ -133,10 +163,10 @@ public class FiscalDocumentTests
     }
 
     [Test]
-    public void Create_IssuerCnpjDifferentFromAccessKey_ThrowsArgumentException()
+    public void Create_IssuerDocumentDifferentFromAccessKey_ThrowsArgumentException()
     {
         // Act
-        var act = () => Build(issuerCnpj: "44555666000181");
+        var act = () => Build(issuerDocument: "44555666000181");
 
         // Assert
         act.Should().Throw<ArgumentException>();

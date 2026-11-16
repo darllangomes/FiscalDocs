@@ -72,14 +72,77 @@ public class AccessKeyTests
     [TestCase(NFeAlphanumericCnpj, "55", "12ABC34501DE35")]
     [TestCase(CTeNumericCnpj, "57", "44555666000181")]
     [TestCase(CTeAlphanumericCnpj, "57", "7K9X2M4P000144")]
-    public void Parse_ValidKey_ExtractsModelAndIssuerCnpj(string input, string model, string issuerCnpj)
+    public void Parse_ValidKey_ExtractsModelAndIssuer(string input, string model, string issuer)
     {
         // Act
         var key = AccessKey.Parse(input);
 
         // Assert
         key.Model.Should().Be(model);
-        key.IssuerCnpj.Value.Should().Be(issuerCnpj);
+        key.IsIssuedBy(TaxId.Parse(issuer)).Should().BeTrue();
+    }
+
+    // ---------- Emitente pessoa física: o CPF ocupa as 14 posições do CNPJ, com zeros à esquerda ----------
+
+    private const string NFeCpfIssuer = "51260800052998224725559200000000421876543214";
+    private const string NFeCpfFieldWithInvalidCpf = "51260800052998224726559200000000451876543218";
+    private const string NFeCnpjStartingWithZeros = "35260800000000000191550010000000071112233440"; // CNPJ 00.000.000/0001-91
+
+    [Test]
+    public void TryParse_KeyOfAnIndividualIssuer_ReturnsTrue()
+    {
+        // Act
+        var ok = AccessKey.TryParse(NFeCpfIssuer, out var key);
+
+        // Assert
+        ok.Should().BeTrue();
+        key!.Value.Should().Be(NFeCpfIssuer);
+        key.Model.Should().Be("55");
+    }
+
+    [Test]
+    public void TryParse_IssuerFieldWithZerosAndAnInvalidCpf_ReturnsFalse()
+    {
+        // Act & Assert
+        AccessKey.TryParse(NFeCpfFieldWithInvalidCpf, out _).Should().BeFalse();
+    }
+
+    [Test]
+    public void IsIssuedBy_IndividualIssuer_MatchesOnlyThatCpf()
+    {
+        // Arrange
+        var key = AccessKey.Parse(NFeCpfIssuer);
+
+        // Act & Assert
+        key.IsIssuedBy(TaxId.Parse("52998224725")).Should().BeTrue();
+        key.IsIssuedBy(TaxId.Parse("12345678909")).Should().BeFalse();
+        key.IsIssuedBy(TaxId.Parse("11222333000181")).Should().BeFalse();
+    }
+
+    [Test]
+    public void IsIssuedBy_CnpjIssuer_MatchesOnlyThatCnpj()
+    {
+        // Arrange
+        var key = AccessKey.Parse(NFeNumericCnpj);
+
+        // Act & Assert
+        key.IsIssuedBy(TaxId.Parse("11222333000181")).Should().BeTrue();
+        key.IsIssuedBy(TaxId.Parse("44555666000181")).Should().BeFalse();
+        key.IsIssuedBy(TaxId.Parse("52998224725")).Should().BeFalse();
+    }
+
+    [Test]
+    public void IsIssuedBy_CnpjStartingWithZeros_TheKeyAloneCannotTellItFromACpf()
+    {
+        // Arrange: 00000000000191 é um CNPJ válido e 00000000191 é um CPF válido, e o campo da chave
+        // é idêntico nos dois casos. Por isso a chave não infere o tipo: quem o define é o elemento
+        // do XML (<CNPJ> ou <CPF>), e a chave só confirma que o número é o mesmo.
+        var key = AccessKey.Parse(NFeCnpjStartingWithZeros);
+
+        // Act & Assert
+        key.IsIssuedBy(TaxId.Parse("00000000000191")).Should().BeTrue();
+        key.IsIssuedBy(TaxId.Parse("00000000191")).Should().BeTrue();
+        key.IsIssuedBy(TaxId.Parse("12345678909")).Should().BeFalse();
     }
 
     [Test]
