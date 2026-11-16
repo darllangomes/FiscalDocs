@@ -1,23 +1,26 @@
+using FiscalDocs.Infrastructure.Messaging;
+
 namespace FiscalDocs.Worker;
 
-public class Worker : BackgroundService
+public sealed class Worker(DocumentIngestedConsumer consumer, ILogger<Worker> logger) : BackgroundService
 {
-    private readonly ILogger<Worker> _logger;
-
-    public Worker(ILogger<Worker> logger)
-    {
-        _logger = logger;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        while (!stoppingToken.IsCancellationRequested)
+        await consumer.StartAsync(stoppingToken);
+        logger.LogInformation("Consuming from {Queue}.", RabbitMqTopology.DocumentIngestedQueue);
+
+        try
         {
-            if (_logger.IsEnabled(LogLevel.Information))
-            {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-            }
-            await Task.Delay(1000, stoppingToken);
+            await Task.Delay(Timeout.Infinite, stoppingToken);
         }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await base.StopAsync(cancellationToken);
+        await consumer.DisposeAsync();
     }
 }

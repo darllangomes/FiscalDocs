@@ -127,6 +127,51 @@ namespace FiscalDocs.Infrastructure.Persistence.Migrations
 
                     b.ToTable("fiscal_documents", (string)null);
                 });
+
+            modelBuilder.Entity("FiscalDocs.Infrastructure.Messaging.DailyIssuerAggregate", b =>
+                {
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<string>("IssuerCnpj")
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("issuer_cnpj");
+
+                    b.Property<string>("IssuerState")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("issuer_state");
+
+                    b.Property<int>("DocumentCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("document_count");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.HasKey("Date", "IssuerCnpj", "IssuerState");
+
+                    b.ToTable("daily_issuer_aggregates", (string)null);
+                });
+
+            modelBuilder.Entity("FiscalDocs.Infrastructure.Messaging.ProcessedMessage", b =>
+                {
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.HasKey("MessageId");
+
+                    b.ToTable("processed_messages", (string)null);
+                });
 #pragma warning restore 612, 618
         }
     }
