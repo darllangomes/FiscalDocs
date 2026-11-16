@@ -49,6 +49,16 @@ public class InfrastructureFixture
         }
     }
 
+    public static async Task CloseRabbitMqConnectionsAsync()
+    {
+        var result = await (_rabbitMq ?? throw new InvalidOperationException("RabbitMQ container is not started."))
+            .ExecAsync(new[] { "rabbitmqctl", "close_all_connections", "test" });
+        if (result.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"rabbitmqctl failed: {result.Stderr}");
+        }
+    }
+
     public static FiscalDocsDbContext CreateContext() =>
         new(new DbContextOptionsBuilder<FiscalDocsDbContext>().UseNpgsql(ConnectionString).Options);
 }

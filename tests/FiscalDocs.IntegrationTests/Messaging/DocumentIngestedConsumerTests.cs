@@ -204,6 +204,43 @@ public class DocumentIngestedConsumerTests
     }
 
     [Test]
+    public async Task Consumer_AfterTheBrokerDropsEveryConnection_KeepsProcessingNewMessages()
+    {
+        // Arrange
+        await StartConsumerAsync();
+        await _publisher.PublishAsync(NewEvent(total: 10.00m), CancellationToken.None);
+        await WaitForProcessedAsync(1);
+
+        // Act
+        await InfrastructureFixture.CloseRabbitMqConnectionsAsync();
+        await PublishWhenBrokerIsBackAsync(NewEvent(total: 20.00m));
+        await WaitForProcessedAsync(2);
+
+        // Assert
+        var aggregate = await AggregateAsync();
+        aggregate!.DocumentCount.Should().Be(2);
+        aggregate.TotalAmount.Should().Be(30.00m);
+    }
+
+    // The client reconnects by itself, so publishing right after the drop may fail for a few seconds.
+    private async Task PublishWhenBrokerIsBackAsync(DocumentIngestedEvent @event)
+    {
+        var deadline = DateTime.UtcNow + WaitTimeout;
+        while (true)
+        {
+            try
+            {
+                await _publisher.PublishAsync(@event, CancellationToken.None);
+                return;
+            }
+            catch when (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(200);
+            }
+        }
+    }
+
+    [Test]
     public async Task Consumer_StoppedWhileIdle_CompletesPromptly()
     {
         // Arrange
