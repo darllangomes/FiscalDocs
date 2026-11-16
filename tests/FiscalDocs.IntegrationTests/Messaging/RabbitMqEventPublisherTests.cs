@@ -37,7 +37,7 @@ public class RabbitMqEventPublisherTests
         MessageId: Guid.NewGuid(),
         DocumentId: Guid.NewGuid(),
         Type: DocumentType.NFe,
-        IssuerCnpj: "11222333000181",
+        IssuerDocument: "11222333000181",
         IssuerState: "PE",
         IssueDate: new DateTimeOffset(2026, 8, 14, 10, 30, 0, TimeSpan.FromHours(-3)),
         TotalAmount: 1500.00m,
@@ -59,7 +59,7 @@ public class RabbitMqEventPublisherTests
         json.GetProperty("messageId").GetGuid().Should().Be(@event.MessageId);
         json.GetProperty("documentId").GetGuid().Should().Be(@event.DocumentId);
         json.GetProperty("type").GetString().Should().Be("NFe");
-        json.GetProperty("issuerCnpj").GetString().Should().Be("11222333000181");
+        json.GetProperty("issuerDocument").GetString().Should().Be("11222333000181");
         json.GetProperty("issuerState").GetString().Should().Be("PE");
         json.GetProperty("issueDate").GetDateTimeOffset().Should().Be(@event.IssueDate);
         json.GetProperty("totalAmount").GetDecimal().Should().Be(1500.00m);
@@ -93,7 +93,7 @@ public class RabbitMqEventPublisherTests
         var message = (await _broker.ReceiveAsync(1, ReceiveTimeout)).Single();
         var names = JsonDocument.Parse(message.Body).RootElement.EnumerateObject().Select(p => p.Name);
         names.Should().BeEquivalentTo(
-            "messageId", "documentId", "type", "issuerCnpj", "issuerState", "issueDate", "totalAmount", "occurredAt");
+            "messageId", "documentId", "type", "issuerDocument", "issuerState", "issueDate", "totalAmount", "occurredAt");
     }
 
     [Test]

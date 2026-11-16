@@ -89,6 +89,20 @@ public class LogPrivacyTests
     }
 
     [Test]
+    public async Task IngestionOfAnIndividualIssuer_DoesNotLogTheIssuerCpf()
+    {
+        // Act
+        var response = await PostAsync(SampleFiles.ReadAllText("nfe-emitente-cpf.xml"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var entries = _factory.Logs.Entries.ToArray();
+        entries.Should().NotBeEmpty("uma captura vazia faria as verificações abaixo passarem sem provar nada");
+        entries.Should().NotContain(e => e.Contains("52998224725"), "o CPF do emitente nunca deve ser logado");
+        entries.Should().NotContain(e => e.Contains("529.982.247-25"));
+    }
+
+    [Test]
     public async Task DuplicateIngestion_DoesNotLogCpfOrXml()
     {
         // Arrange

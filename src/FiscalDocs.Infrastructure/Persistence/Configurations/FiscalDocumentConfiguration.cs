@@ -32,8 +32,9 @@ public sealed class FiscalDocumentConfiguration : IEntityTypeConfiguration<Fisca
             .HasConversion(v => v.ToUniversalTime(), v => v)
             .IsRequired();
 
-        builder.Property(d => d.IssuerCnpj)
-            .HasConversion(v => v.Value, s => Cnpj.Parse(s))
+        // CNPJ (14) ou CPF (11): o tamanho distingue os dois.
+        builder.Property(d => d.IssuerDocument)
+            .HasConversion(v => v.Value, s => TaxId.Parse(s))
             .HasMaxLength(14)
             .IsRequired();
 
@@ -73,7 +74,7 @@ public sealed class FiscalDocumentConfiguration : IEntityTypeConfiguration<Fisca
         builder.HasQueryFilter(d => !d.IsDeleted);
 
         builder.HasIndex(d => d.AccessKey).IsUnique();
-        builder.HasIndex(d => new { d.IssuerCnpj, d.IssueDate });
+        builder.HasIndex(d => new { d.IssuerDocument, d.IssueDate });
         builder.HasIndex(d => new { d.IssuerState, d.IssueDate });
         builder.HasIndex(d => d.IssueDate);
     }

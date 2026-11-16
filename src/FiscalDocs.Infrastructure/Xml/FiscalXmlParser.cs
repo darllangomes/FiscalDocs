@@ -39,14 +39,11 @@ public abstract class FiscalXmlParser : IDocumentParser
             throw new InvalidDocumentException("Access key is missing or invalid.");
         }
 
-        if (!Cnpj.TryParse(RequiredText(emit, "CNPJ"), out var issuerCnpj))
-        {
-            throw new InvalidDocumentException("Issuer CNPJ is invalid.");
-        }
+        var issuerDocument = ReadIssuerDocument(emit);
 
-        if (accessKey.IssuerCnpj != issuerCnpj)
+        if (!accessKey.IsIssuedBy(issuerDocument))
         {
-            throw new InvalidDocumentException("Issuer CNPJ does not match the access key.");
+            throw new InvalidDocumentException("Issuer document does not match the access key.");
         }
 
         var issuerName = RequiredText(emit, "xNome");
@@ -84,13 +81,33 @@ public abstract class FiscalXmlParser : IDocumentParser
             number,
             series,
             issueDate,
-            issuerCnpj,
+            issuerDocument,
             issuerName,
             issuerState,
             recipientDocument,
             recipientName,
             recipientState,
             totalAmount);
+    }
+
+    // O elemento decide o tipo: <CNPJ> exige um CNPJ e <CPF> exige um CPF. Não dá para inferir pelo valor,
+    // porque 00000000000191 (CNPJ) e 00000000191 (CPF) são ambos válidos.
+    private TaxId ReadIssuerDocument(XElement emit)
+    {
+        var cnpj = emit.Element(Ns + "CNPJ");
+        if (cnpj is not null)
+        {
+            return Cnpj.TryParse(cnpj.Value.Trim(), out var parsedCnpj)
+                ? TaxId.From(parsedCnpj)
+                : throw new InvalidDocumentException("Issuer CNPJ is invalid.");
+        }
+
+        var cpf = emit.Element(Ns + "CPF")
+                  ?? throw new InvalidDocumentException("Issuer must have a CNPJ or a CPF.");
+
+        return Cpf.TryParse(cpf.Value.Trim(), out var parsedCpf)
+            ? TaxId.From(parsedCpf)
+            : throw new InvalidDocumentException("Issuer CPF is invalid.");
     }
 
     protected XElement Required(XElement parent, string name) =>

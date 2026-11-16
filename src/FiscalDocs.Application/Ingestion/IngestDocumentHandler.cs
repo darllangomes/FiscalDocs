@@ -65,7 +65,7 @@ public sealed class IngestDocumentHandler
                 parsed.Number,
                 parsed.Series,
                 parsed.IssueDate,
-                parsed.IssuerCnpj,
+                parsed.IssuerDocument,
                 parsed.IssuerName,
                 parsed.IssuerState,
                 parsed.RecipientDocument,

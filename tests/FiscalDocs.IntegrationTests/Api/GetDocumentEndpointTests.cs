@@ -67,12 +67,33 @@ public class GetDocumentEndpointTests
         doc.GetProperty("series").GetString().Should().Be("1");
         doc.GetProperty("issueDate").GetDateTimeOffset()
             .Should().Be(DateTimeOffset.Parse("2026-08-14T10:30:00-03:00"));
-        doc.GetProperty("issuerCnpj").GetString().Should().Be("11222333000181");
+        doc.GetProperty("issuerDocument").GetString().Should().Be("11222333000181");
         doc.GetProperty("issuerName").GetString().Should().Be("EMPRESA FICTICIA NUMERICA LTDA");
         doc.GetProperty("issuerState").GetString().Should().Be("PE");
         doc.GetProperty("recipientName").GetString().Should().Be("CLIENTE FICTICIO DA SILVA");
         doc.GetProperty("recipientState").GetString().Should().Be("SP");
         doc.GetProperty("totalAmount").GetDecimal().Should().Be(1500.00m);
+    }
+
+    [Test]
+    public async Task IndividualIssuer_ReturnsTheCpfMaskedAndNeverInFull()
+    {
+        // Arrange
+        var id = await IngestSampleAsync("nfe-emitente-cpf.xml");
+
+        // Act
+        var response = await _client.GetAsync($"{Route}/{id}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        using var json = JsonDocument.Parse(body);
+        json.RootElement.GetProperty("issuerDocument").GetString().Should().Be("***.982.247-**");
+        json.RootElement.GetProperty("issuerName").GetString().Should().Be("PRODUTOR RURAL FICTICIO");
+        // A chave de acesso carrega o CPF do emitente (com zeros à esquerda) e é o identificador público do
+        // documento: não dá para mascará-la. O que a API não pode é devolver o CPF em outro campo.
+        json.RootElement.GetProperty("accessKey").GetString().Should().Contain("52998224725");
+        body.Replace(json.RootElement.GetProperty("accessKey").GetString()!, "").Should().NotContain("52998224725");
     }
 
     [Test]

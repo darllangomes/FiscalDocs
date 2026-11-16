@@ -69,8 +69,22 @@ public class DocumentOutboxTests
         json.GetProperty("messageId").GetGuid().Should().Be(message.Id);
         json.GetProperty("documentId").GetGuid().Should().Be(id);
         json.GetProperty("type").GetString().Should().Be("NFe");
-        json.GetProperty("issuerCnpj").GetString().Should().Be("11222333000181");
+        json.GetProperty("issuerDocument").GetString().Should().Be("11222333000181");
         json.GetProperty("totalAmount").GetDecimal().Should().Be(1500.00m);
+    }
+
+    [Test]
+    public async Task Post_IndividualIssuer_PayloadCarriesTheIssuerDocumentButNotTheRecipient()
+    {
+        // Act
+        var response = await _client.PostAsync(Route, Xml("nfe-emitente-cpf.xml"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var payload = (await OutboxAsync()).Single().Payload;
+        JsonDocument.Parse(payload).RootElement.GetProperty("issuerDocument").GetString().Should().Be("52998224725");
+        payload.Should().NotContain("COOPERATIVA");
+        payload.Should().NotContain("<");
     }
 
     [Test]

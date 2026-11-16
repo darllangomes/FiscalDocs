@@ -63,6 +63,7 @@ public class DocumentsEndpointTests
     [TestCase("nfe-realista-3itens.xml")]
     [TestCase("nfe-realista-250itens.xml")]
     [TestCase("nfe-realista-990itens.xml")]
+    [TestCase("nfe-emitente-cpf.xml")]
     public async Task Post_NewDocument_Returns201WithLocationAndId(string file)
     {
         // Act

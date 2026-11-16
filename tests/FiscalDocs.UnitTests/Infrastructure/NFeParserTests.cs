@@ -22,6 +22,7 @@ public class NFeParserTests
 
     [TestCase("nfe-cnpj-numerico.xml", true)]
     [TestCase("nfe-cnpj-alfanumerico.xml", true)]
+    [TestCase("nfe-emitente-cpf.xml", true)]
     [TestCase("cte-cnpj-numerico.xml", false)]
     [TestCase("cte-cnpj-alfanumerico.xml", false)]
     public void CanParse_ReturnsTrueOnlyForNFe(string file, bool expected)
@@ -43,7 +44,7 @@ public class NFeParserTests
             "1001",
             "1",
             new DateTimeOffset(2026, 8, 14, 10, 30, 0, TimeSpan.FromHours(-3)),
-            Cnpj.Parse("11222333000181"),
+            TaxId.Parse("11222333000181"),
             "EMPRESA FICTICIA NUMERICA LTDA",
             "PE",
             "12345678909",
@@ -65,7 +66,7 @@ public class NFeParserTests
             "2002",
             "1",
             new DateTimeOffset(2026, 8, 20, 14, 15, 0, TimeSpan.FromHours(-3)),
-            Cnpj.Parse("12ABC34501DE35"),
+            TaxId.Parse("12ABC34501DE35"),
             "EMPRESA FICTICIA ALFANUMERICA LTDA",
             "PE",
             "99888777000100",
@@ -89,7 +90,7 @@ public class NFeParserTests
             "5005",
             "1",
             new DateTimeOffset(2026, 8, 16, 9, 12, 44, TimeSpan.FromHours(-3)),
-            Cnpj.Parse("11222333000181"),
+            TaxId.Parse("11222333000181"),
             "EMPRESA FICTICIA NUMERICA LTDA",
             "PE",
             "12ABC34501DE35",
@@ -128,6 +129,90 @@ public class NFeParserTests
     {
         // Act & Assert
         _parser.CanParse(Load(file)).Should().BeTrue();
+    }
+
+    // ---------- Emitente pessoa física (produtor rural): <emit> traz <CPF> no lugar de <CNPJ> ----------
+
+    private static XElement Emit(XDocument document) =>
+        document.Descendants().Single(e => e.Name.LocalName == "emit");
+
+    [Test]
+    public void Parse_NFeFromAnIndividualIssuer_ExtractsTheCpfAsIssuerDocument()
+    {
+        // Act
+        var result = _parser.Parse(Load("nfe-emitente-cpf.xml"));
+
+        // Assert
+        result.Should().BeEquivalentTo(new ParsedDocument(
+            DocumentType.NFe,
+            AccessKey.Parse("51260800052998224725559200000000421876543214"),
+            "42",
+            "920",
+            new DateTimeOffset(2026, 8, 18, 8, 0, 0, TimeSpan.FromHours(-4)),
+            TaxId.Parse("52998224725"),
+            "PRODUTOR RURAL FICTICIO",
+            "MT",
+            "11222333000181",
+            "COOPERATIVA FICTICIA DE GRAOS",
+            "SP",
+            3200.00m));
+    }
+
+    [Test]
+    public void Parse_IssuerCpfDifferentFromAccessKey_ThrowsInvalidDocumentException()
+    {
+        // Arrange
+        var document = Load("nfe-emitente-cpf.xml");
+        Emit(document).Elements().Single(e => e.Name.LocalName == "CPF").Value = "12345678909";
+
+        // Act
+        var act = () => _parser.Parse(document);
+
+        // Assert
+        act.Should().Throw<InvalidDocumentException>();
+    }
+
+    [Test]
+    public void Parse_IssuerWithInvalidCpf_ThrowsInvalidDocumentException()
+    {
+        // Arrange
+        var document = Load("nfe-emitente-cpf.xml");
+        Emit(document).Elements().Single(e => e.Name.LocalName == "CPF").Value = "52998224726";
+
+        // Act
+        var act = () => _parser.Parse(document);
+
+        // Assert
+        act.Should().Throw<InvalidDocumentException>();
+    }
+
+    [Test]
+    public void Parse_IssuerWithoutCnpjOrCpf_ThrowsInvalidDocumentException()
+    {
+        // Arrange
+        var document = Load("nfe-emitente-cpf.xml");
+        Emit(document).Elements().Single(e => e.Name.LocalName == "CPF").Remove();
+
+        // Act
+        var act = () => _parser.Parse(document);
+
+        // Assert
+        act.Should().Throw<InvalidDocumentException>();
+    }
+
+    [Test]
+    public void Parse_CnpjElementHoldingACpf_ThrowsInvalidDocumentException()
+    {
+        // Arrange: um valor de 11 dígitos dentro de <CNPJ> não vira CPF por adivinhação.
+        var document = Load("nfe-emitente-cpf.xml");
+        Emit(document).Elements().Single(e => e.Name.LocalName == "CPF").Name =
+            document.Root!.Name.Namespace + "CNPJ";
+
+        // Act
+        var act = () => _parser.Parse(document);
+
+        // Assert
+        act.Should().Throw<InvalidDocumentException>();
     }
 
     [Test]

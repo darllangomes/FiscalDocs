@@ -46,7 +46,7 @@ public class IngestDocumentHandlerTests
 
         return FiscalDocument.Create(
             p.Type, p.AccessKey, p.Number, p.Series, p.IssueDate,
-            p.IssuerCnpj, p.IssuerName, p.IssuerState,
+            p.IssuerDocument, p.IssuerName, p.IssuerState,
             p.RecipientDocument, p.RecipientName, p.RecipientState,
             p.TotalAmount, rawXml ?? xml, Now);
     }
@@ -97,7 +97,7 @@ public class IngestDocumentHandlerTests
         saved!.Type.Should().Be(FiscalDocs.Domain.Enums.DocumentType.NFe);
         saved.AccessKey.Value.Should().Be("26260811222333000181550010000010011123456782");
         saved.Number.Should().Be("1001");
-        saved.IssuerCnpj.Value.Should().Be("11222333000181");
+        saved.IssuerDocument.Value.Should().Be("11222333000181");
         saved.IssuerState.Should().Be("PE");
         saved.RecipientDocument.Should().Be("12345678909");
         saved.TotalAmount.Should().Be(1500.00m);
