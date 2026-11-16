@@ -33,6 +33,50 @@ services:
       timeout: 10s
       retries: 10
 
+  api:
+    build:
+      context: .
+      dockerfile: src/FiscalDocs.Api/Dockerfile
+    container_name: fiscaldocs-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      RabbitMq__Uri: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+      Auth__ApiKey: ${API_KEY}
+      Database__MigrateOnStartup: "true"
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    # The ASP.NET image ships without curl, so probe with bash's /dev/tcp.
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health/live HTTP/1.0\r\n\r\n' >&3 && head -n 1 <&3 | grep -q 200"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  worker:
+    build:
+      context: .
+      dockerfile: src/FiscalDocs.Worker/Dockerfile
+    container_name: fiscaldocs-worker
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      RabbitMq__Uri: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: on-failure
+
 volumes:
   postgres_data:
   rabbitmq_data:
