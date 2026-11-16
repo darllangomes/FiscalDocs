@@ -105,6 +105,9 @@ aggregate_is 11222333000181 "1|1500.00" || fail "aggregate changed after a dupli
 
 step "Ingesting while RabbitMQ is down (the API must not depend on it)"
 compose stop rabbitmq
+# A sonda de prontidão só olha o banco: sem isso, uma queda do broker tiraria a API do balanceador.
+status="$(curl -s -o /dev/null -w "%{http_code}" "$API/health/ready")"
+[[ "$status" == "200" ]] || fail "expected 200 on /health/ready with the broker down, got $status"
 status="$(post_xml samples/nfe-cnpj-alfanumerico.xml)"
 [[ "$status" == "201" ]] || fail "expected 201 with the broker down, got $status"
 
