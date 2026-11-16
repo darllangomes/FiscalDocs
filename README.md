@@ -139,6 +139,8 @@ Cada chave também pode vir de uma variável de ambiente, com `__` no lugar de `
 | `Database:MigrateOnStartup` | Api | `false` (o compose liga) | Aplica as migrations ao subir. Use uma réplica só ([ADR 0008](docs/adr/0008-api-independente-do-broker.md)). |
 | `RabbitMq:Uri` | Worker | obrigatória | `amqp://usuário:senha@host:5672/`. |
 | `Outbox:PollIntervalSeconds` | Worker | `1` | Intervalo entre as varreduras da outbox. |
+| `Outbox:RetentionDays` | Worker | `7` | Quanto tempo as mensagens já publicadas ficam na outbox antes de serem apagadas. As pendentes nunca são apagadas. |
+| `Outbox:CleanupIntervalMinutes` e `Outbox:CleanupBatchSize` | Worker | `60` e `1000` | De quanto em quanto tempo a limpeza roda e quantas linhas cada `DELETE` remove. |
 
 ## Usando a API
 
@@ -308,8 +310,8 @@ dotnet test tests/FiscalDocs.ArchitectureTests   # sem Docker
 
 | Projeto | Testes | O que cobre |
 |---|---|---|
-| `FiscalDocs.UnitTests` | 154 | Domínio (CNPJ e chave de acesso, numéricos e alfanuméricos), parsers de NFe e CTe, handler de ingestão e leitura segura de XML. |
-| `FiscalDocs.IntegrationTests` | 242 | A API de ponta a ponta e a mensageria, com PostgreSQL e RabbitMQ reais em containers (Testcontainers): ingestão e concorrência, consulta, `PATCH` e `DELETE`, outbox, consumidor, retry e DLQ, health checks, rate limiting, Swagger e privacidade dos logs. |
+| `FiscalDocs.UnitTests` | 213 | Domínio (CNPJ e chave de acesso, numéricos e alfanuméricos), parsers de NFe e CTe, handler de ingestão e leitura segura de XML. |
+| `FiscalDocs.IntegrationTests` | 292 | A API de ponta a ponta e a mensageria, com PostgreSQL e RabbitMQ reais em containers (Testcontainers): ingestão e concorrência, consulta, `PATCH` e `DELETE`, outbox, consumidor, retry e DLQ, health checks, rate limiting, Swagger e privacidade dos logs. |
 | `FiscalDocs.ArchitectureTests` | 14 | Regra de dependência entre as camadas (NetArchTest). |
 
 Os testes de integração usam containers reais porque o provider em memória do EF não reproduz índice único, concorrência nem `xmin` ([ADR 0001](docs/adr/0001-postgresql-como-banco.md)). Na primeira execução o Docker baixa as imagens `postgres:16` e `rabbitmq:3-management`.
@@ -353,11 +355,11 @@ Limitações, com o registro onde cada uma é explicada:
 - Chave de API única, sem rotação nem escopos. Atrás de um proxy reverso é preciso configurar `ForwardedHeaders`, e o TLS deve terminar no proxy ([ADR 0011](docs/adr/0011-seguranca-e-dados-sensiveis.md)).
 - O CPF do destinatário fica em texto puro no banco ([ADR 0011](docs/adr/0011-seguranca-e-dados-sensiveis.md)).
 - A migração na subida não tem trava: use uma réplica da API na primeira subida ([ADR 0008](docs/adr/0008-api-independente-do-broker.md)).
-- As linhas processadas da outbox não são removidas, e não há métrica de atraso da outbox nem sonda de saúde do Worker ([ADR 0006](docs/adr/0006-outbox-transacional-e-consumidor-idempotente.md)).
+- Não há métrica de atraso da outbox nem sonda de saúde do Worker, e a tabela `processed_messages` do consumidor não é limpa ([ADR 0006](docs/adr/0006-outbox-transacional-e-consumidor-idempotente.md)).
 - A DLQ não tem ferramenta de reprocessamento. Se a recuperação automática da conexão com o RabbitMQ desistir, só reiniciar o Worker resolve ([ADR 0007](docs/adr/0007-retry-com-ttl-dlq-e-recuperacao-do-rabbitmq.md)).
 - Os testes de carga ([`loadtests/`](loadtests/README.md)) mostram que, num notebook de desenvolvimento, a ingestão de NFes de 23 KB sustenta 300 documentos por segundo (p95 de 55 ms) e satura entre 300 e 400. O gargalo não foi investigado.
 
-Próximos passos: suporte a NFSe ([ADR 0003](docs/adr/0003-nfe-e-cte-com-nfse-como-extensao.md)), repetir a carga de consulta com um volume maior para reavaliar o keyset, cifrar o CPF, limpar a outbox e expor a métrica de atraso, e uma sonda de saúde para o Worker.
+Próximos passos: suporte a NFSe ([ADR 0003](docs/adr/0003-nfe-e-cte-com-nfse-como-extensao.md)), repetir a carga de consulta com um volume maior para reavaliar o keyset, cifrar o CPF, expor a métrica de atraso da outbox, limpar a `processed_messages` e uma sonda de saúde para o Worker.
 
 ## Estrutura do repositório
 
