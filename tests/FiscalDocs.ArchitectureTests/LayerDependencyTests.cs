@@ -207,7 +207,7 @@ public class LayerDependencyTests
     public void Control_DomainTypesAreDiscovered()
     {
         // Act
-        var count = Types.InAssembly(Domain).GetTypes().Count();
+        var count = Types.InAssembly(Domain).That().ResideInNamespace(DomainNamespace).GetTypes().Count();
 
         // Assert
         count.Should().BeGreaterThan(5);
