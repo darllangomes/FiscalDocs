@@ -21,15 +21,24 @@ public static class DependencyInjection
         services.AddDbContext<FiscalDocsDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IFiscalDocumentRepository, FiscalDocumentRepository>();
 
-        var rabbitMqUri = configuration[$"{RabbitMqOptions.SectionName}:Uri"]
-            ?? throw new InvalidOperationException("RabbitMq:Uri is not configured.");
-        services.AddSingleton(new RabbitMqOptions { Uri = rabbitMqUri });
-        services.AddSingleton<RabbitMqConnectionProvider>();
-        services.AddSingleton<IDocumentEventPublisher, RabbitMqDocumentEventPublisher>();
-
         services.AddSingleton<IXmlDocumentLoader, SafeXmlDocumentLoader>();
         services.AddSingleton<IDocumentParser, NFeParser>();
         services.AddSingleton<IDocumentParser, CTeParser>();
+
+        return services;
+    }
+
+    // Só o Worker fala com o broker: a API grava na outbox e não precisa dele.
+    public static IServiceCollection AddMessaging(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var rabbitMqUri = configuration[$"{RabbitMqOptions.SectionName}:Uri"]
+            ?? throw new InvalidOperationException("RabbitMq:Uri is not configured.");
+
+        services.AddSingleton(new RabbitMqOptions { Uri = rabbitMqUri });
+        services.AddSingleton<RabbitMqConnectionProvider>();
+        services.AddSingleton<IDocumentEventPublisher, RabbitMqDocumentEventPublisher>();
 
         return services;
     }
