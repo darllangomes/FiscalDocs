@@ -22,7 +22,9 @@ public sealed class RabbitMqConnectionProvider : IAsyncDisposable
 
     public async Task<IConnection> GetConnectionAsync(CancellationToken cancellationToken)
     {
-        if (_connection is { IsOpen: true })
+        // A closed connection is not replaced: the client recovers it by itself, together with its
+        // channels and consumers. Replacing it would discard the consumer's channel for good.
+        if (_connection is not null)
         {
             return _connection;
         }
@@ -30,18 +32,7 @@ public sealed class RabbitMqConnectionProvider : IAsyncDisposable
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            if (_connection is { IsOpen: true })
-            {
-                return _connection;
-            }
-
-            if (_connection is not null)
-            {
-                await _connection.DisposeAsync();
-                _connection = null;
-            }
-
-            _connection = await _factory.CreateConnectionAsync(cancellationToken);
+            _connection ??= await _factory.CreateConnectionAsync(cancellationToken);
             return _connection;
         }
         finally
