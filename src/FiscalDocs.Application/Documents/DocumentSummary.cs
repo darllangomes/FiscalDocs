@@ -2,7 +2,7 @@ using FiscalDocs.Domain.Enums;
 
 namespace FiscalDocs.Application.Documents;
 
-/// <summary>Listing row: no raw XML and no notes.</summary>
+/// <summary>Linha da listagem: sem XML bruto e sem notas.</summary>
 public sealed record DocumentSummary(
     Guid Id, DocumentType Type, DocumentStatus Status, string AccessKey,
     string Number, string Series, DateTimeOffset IssueDate,

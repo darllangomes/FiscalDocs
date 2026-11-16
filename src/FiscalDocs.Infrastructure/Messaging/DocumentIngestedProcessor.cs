@@ -11,8 +11,8 @@ public sealed class DocumentIngestedProcessor(FiscalDocsDbContext context, TimeP
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-        // Claiming the MessageId first makes duplicates (even concurrent ones) a no-op:
-        // a second insert waits for the first transaction and then conflicts.
+        // Reservar o MessageId primeiro torna duplicatas (inclusive concorrentes) inofensivas:
+        // o segundo insert espera a primeira transação e então conflita.
         var processedAt = clock.GetUtcNow();
         var claimed = await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
@@ -29,7 +29,7 @@ public sealed class DocumentIngestedProcessor(FiscalDocsDbContext context, TimeP
 
         var date = DateOnly.FromDateTime(@event.IssueDate.UtcDateTime);
 
-        // Atomic upsert in SQL: no read-modify-write, so concurrent events cannot lose updates.
+        // Upsert atômico em SQL: sem ler e gravar em memória, então eventos concorrentes não perdem atualizações.
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
             INSERT INTO daily_issuer_aggregates (date, issuer_cnpj, issuer_state, document_count, total_amount)

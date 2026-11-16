@@ -36,8 +36,8 @@ public class CnpjTests
 
     [TestCase("11222333000182")]    // DV errado (numérico)
     [TestCase("12ABC34501DE36")]    // DV errado (alfanumérico)
-    [TestCase("1122233300018")]     // 13 caracteres
-    [TestCase("112223330001811")]   // 15 caracteres
+    [TestCase("1122233300018")]
+    [TestCase("112223330001811")]
     [TestCase("12ABC34501DE3A")]    // letra nas posições do DV
     [TestCase("1122233300018!")]    // caractere inválido
     [TestCase("11,222,333/0001-81")] // separador não aceito

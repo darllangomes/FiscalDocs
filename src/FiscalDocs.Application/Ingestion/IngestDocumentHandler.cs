@@ -36,7 +36,7 @@ public sealed class IngestDocumentHandler
 
         var document = CreateDocument(parsed, xml);
 
-        // Insert first and let the unique index decide: no check-then-insert race.
+        // Insere primeiro e deixa o índice único decidir: sem corrida entre consultar e inserir.
         if (await _repository.TryAddAsync(document, cancellationToken))
         {
             return new IngestResult(IngestOutcome.Created, document.Id);
@@ -77,8 +77,8 @@ public sealed class IngestDocumentHandler
         }
         catch (ArgumentException ex)
         {
-            // The entity rejected values the XML parser accepted (e.g. a state with 3 letters).
-            // The message stays generic because it can reach the client.
+            // A entidade rejeitou valores que o parser aceitou (ex.: UF com 3 letras).
+            // A mensagem fica genérica porque pode chegar ao cliente.
             throw new InvalidDocumentException("Document data is invalid.", ex);
         }
     }

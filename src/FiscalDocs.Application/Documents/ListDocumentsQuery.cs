@@ -3,7 +3,7 @@ using FiscalDocs.Domain.ValueObjects;
 
 namespace FiscalDocs.Application.Documents;
 
-/// <summary>Validated filters. Both date bounds are inclusive and interpreted as UTC days.</summary>
+/// <summary>Filtros já validados. Os dois limites de data são inclusivos e interpretados como dias UTC.</summary>
 public sealed record ListDocumentsQuery(
     int Page,
     int PageSize,

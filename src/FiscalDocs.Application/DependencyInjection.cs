@@ -10,7 +10,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        // TryAdd lets tests replace the clock with a fake one.
+        // TryAdd permite que os testes troquem o relógio por um falso.
         services.TryAddSingleton(TimeProvider.System);
 
         services.AddSingleton<DocumentParserResolver>();

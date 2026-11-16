@@ -169,8 +169,8 @@ public class LayerDependencyTests
         result.IsSuccessful.Should().BeTrue(Violations(result));
     }
 
-    // Positive controls: if a namespace string above had a typo the rules would pass vacuously.
-    // "ShouldNot" fails when at least one type has the dependency, which is what proves it is detected.
+    // Controles positivos: se um namespace acima tivesse erro de digitação, a regra passaria sem checar nada.
+    // "ShouldNot" falha quando pelo menos um tipo tem a dependência, e é isso que prova que ela é detectada.
 
     private static bool AnyTypeDependsOn(Assembly assembly, string dependency) =>
         !Types.InAssembly(assembly).ShouldNot().HaveDependencyOn(dependency).GetResult().IsSuccessful;

@@ -15,8 +15,8 @@ public static class RabbitMqTopology
 
     private const string RetryQueuePrefix = "fiscaldocs.document-ingested.retry.";
 
-    // Declares everything a publisher needs. The main queue dead-letters to the DLQ,
-    // so a consumer only has to nack(requeue: false) to park a message there.
+    // Declara tudo o que o publicador precisa. A fila principal encaminha para a DLQ,
+    // então basta o consumidor fazer nack(requeue: false) para estacionar a mensagem lá.
     public static async Task DeclareAsync(IChannel channel, CancellationToken cancellationToken)
     {
         await channel.ExchangeDeclareAsync(
@@ -43,8 +43,8 @@ public static class RabbitMqTopology
             DocumentIngestedQueue, Exchange, DocumentIngestedRoutingKey, cancellationToken: cancellationToken);
     }
 
-    // One queue per attempt. A message waits there until the TTL expires and is then
-    // dead-lettered back to the main queue.
+    // Uma fila por tentativa. A mensagem espera ali até o TTL expirar e então volta
+    // para a fila principal via dead-letter.
     public static async Task DeclareRetryAsync(
         IChannel channel, IReadOnlyList<TimeSpan> delays, CancellationToken cancellationToken)
     {

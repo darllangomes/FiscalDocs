@@ -48,7 +48,7 @@ public class SafeXmlLoaderTests
 
         // Assert
         act.Should().Throw<InvalidDocumentException>()
-            .Which.Message.Should().NotContain("fonts"); // [fonts] is a section of win.ini
+            .Which.Message.Should().NotContain("fonts"); // [fonts] é uma seção do win.ini
     }
 
     [Test]

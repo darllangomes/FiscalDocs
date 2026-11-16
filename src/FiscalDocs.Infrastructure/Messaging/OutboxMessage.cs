@@ -11,7 +11,7 @@ public sealed class OutboxMessage
     public DateTimeOffset OccurredAt { get; set; }
     public DateTimeOffset? ProcessedAt { get; set; }
 
-    // The row id is the event's MessageId, so consumers see a stable id however often it is published.
+    // O id da linha é o MessageId do evento: o consumidor vê um id estável, não importa quantas vezes ele seja publicado.
     public static OutboxMessage From(DocumentIngestedEvent @event) => new()
     {
         Id = @event.MessageId,

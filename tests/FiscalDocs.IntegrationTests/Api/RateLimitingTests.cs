@@ -143,7 +143,7 @@ public class RateLimitingTests
         return client;
     }
 
-    // TestServer has no client address, so the test sets one from a header before rate limiting runs.
+    // O TestServer não tem endereço de cliente, então o teste define um a partir de um header antes de o limitador rodar.
     private sealed class ClientIpStartupFilter : IStartupFilter
     {
         public const string Header = "X-Test-Client-Ip";

@@ -74,7 +74,7 @@ public class ListDocumentsEndpointTests
         await context.SaveChangesAsync();
     }
 
-    // ---------- Shape, ordering, paging ----------
+    // ---------- Formato, ordenação e paginação ----------
 
     [Test]
     public async Task Default_ReturnsEverythingNewestFirstWithPagingMetadata()
@@ -144,18 +144,18 @@ public class ListDocumentsEndpointTests
         visited.Should().Equal("4004", "2002", "3003", "1001");
     }
 
-    // ---------- Filters ----------
+    // ---------- Filtros ----------
 
     [TestCase("type=CTe", new[] { "4004", "3003" })]
     [TestCase("type=NFe", new[] { "2002", "1001" })]
     [TestCase("issuerState=SP", new[] { "4004", "3003" })]
-    [TestCase("issuerState=pe", new[] { "2002", "1001" })]                       // case-insensitive
+    [TestCase("issuerState=pe", new[] { "2002", "1001" })]                       // sem diferenciar caixa
     [TestCase("issuerCnpj=12ABC34501DE35", new[] { "2002" })]
-    [TestCase("issuerCnpj=12.abc.345/01de-35", new[] { "2002" })]                // same normalization as Cnpj.TryParse
-    [TestCase("issuedFrom=2026-08-15&issuedTo=2026-08-20", new[] { "2002", "3003" })] // both bounds inclusive
+    [TestCase("issuerCnpj=12.abc.345/01de-35", new[] { "2002" })]                // mesma normalização do Cnpj.TryParse
+    [TestCase("issuedFrom=2026-08-15&issuedTo=2026-08-20", new[] { "2002", "3003" })] // os dois limites são inclusivos
     [TestCase("issuedFrom=2026-08-21", new[] { "4004" })]
     [TestCase("issuedTo=2026-08-14", new[] { "1001" })]
-    [TestCase("type=NFe&issuerState=PE&issuedFrom=2026-08-15", new[] { "2002" })] // filters combine with AND
+    [TestCase("type=NFe&issuerState=PE&issuedFrom=2026-08-15", new[] { "2002" })] // filtros combinados com AND
     [TestCase("issuerState=RS", new string[0])]
     public async Task Filters_ReturnOnlyMatchingDocuments(string query, string[] expected)
     {
@@ -196,7 +196,7 @@ public class ListDocumentsEndpointTests
         list.GetProperty("totalCount").GetInt32().Should().Be(3);
     }
 
-    // ---------- Validation ----------
+    // ---------- Validação ----------
 
     [TestCase("page=0")]
     [TestCase("page=-1")]
@@ -219,7 +219,7 @@ public class ListDocumentsEndpointTests
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
     }
 
-    // ---------- Security ----------
+    // ---------- Segurança ----------
 
     [Test]
     public async Task WithoutApiKey_Returns401()

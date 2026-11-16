@@ -45,7 +45,7 @@ public sealed class DocumentIngestedConsumer(
         _channel = channel;
     }
 
-    // Must never throw: an exception escaping the handler would kill the channel.
+    // Nunca pode lançar exceção: uma exceção que escapasse do handler derrubaria o canal.
     private async Task HandleAsync(IChannel channel, BasicDeliverEventArgs delivery)
     {
         try
@@ -115,7 +115,7 @@ public sealed class DocumentIngestedConsumer(
             return;
         }
 
-        // Ack only after the retry copy is confirmed by the broker.
+        // O ack só sai depois que o broker confirmar a cópia do retry.
         await channel.BasicAckAsync(delivery.DeliveryTag, multiple: false);
     }
 
@@ -167,7 +167,7 @@ public sealed class DocumentIngestedConsumer(
         }
         catch
         {
-            // Channel already closed: the broker requeues unacked messages on its own.
+            // Canal já fechado: o broker recoloca na fila as mensagens sem ack por conta própria.
         }
     }
 

@@ -6,7 +6,7 @@ namespace FiscalDocs.UnitTests.Domain;
 [TestFixture]
 public class AccessKeyTests
 {
-    // Keys from samples/ (check digit: modulo 11, character value = ASCII - 48)
+    // Chaves de samples/ (dígito verificador: módulo 11, valor do caractere = ASCII - 48)
     private const string NFeNumericCnpj = "26260811222333000181550010000010011123456782";
     private const string NFeAlphanumericCnpj = "26260812ABC34501DE35550010000020021234567895";
     private const string CTeNumericCnpj = "35260844555666000181570010000030031345678900";
@@ -26,8 +26,8 @@ public class AccessKeyTests
         key!.Value.Should().Be(input);
     }
 
-    [TestCase("2626 0811 2223 3300 0181 5500 1000 0010 0111 2345 6782", NFeNumericCnpj)] // as printed on the DANFE
-    [TestCase("26260812abc34501de35550010000020021234567895", NFeAlphanumericCnpj)]       // lowercase
+    [TestCase("2626 0811 2223 3300 0181 5500 1000 0010 0111 2345 6782", NFeNumericCnpj)] // como impressa no DANFE
+    [TestCase("26260812abc34501de35550010000020021234567895", NFeAlphanumericCnpj)]       // minúsculas
     public void TryParse_SpacesOrLowercase_NormalizesValue(string input, string expected)
     {
         // Act
@@ -38,14 +38,14 @@ public class AccessKeyTests
         key!.Value.Should().Be(expected);
     }
 
-    [TestCase("26260811222333000181550010000010011123456783")]  // wrong check digit (numeric)
-    [TestCase("26260812ABC34501DE35550010000020021234567896")]  // wrong check digit (alphanumeric)
-    [TestCase("2626081122233300018155001000001001112345678")]   // 43 characters
-    [TestCase("262608112223330001815500100000100111234567820")] // 45 characters
-    [TestCase("A6260811222333000181550010000010011123456782")]  // letter in the state code position
-    [TestCase("26260811222333000181550010000010011A23456782")]  // letter in the numeric tail
-    [TestCase("2626081122233300018155001000001001112345678A")]  // letter in the check digit position
-    [TestCase("26260811222333000181550010000010011123456-82")]  // unsupported separator
+    [TestCase("26260811222333000181550010000010011123456783")]  // DV errado (numérico)
+    [TestCase("26260812ABC34501DE35550010000020021234567896")]  // DV errado (alfanumérico)
+    [TestCase("2626081122233300018155001000001001112345678")]
+    [TestCase("262608112223330001815500100000100111234567820")]
+    [TestCase("A6260811222333000181550010000010011123456782")]  // letra na posição do código da UF
+    [TestCase("26260811222333000181550010000010011A23456782")]  // letra na parte numérica final
+    [TestCase("2626081122233300018155001000001001112345678A")]  // letra na posição do DV
+    [TestCase("26260811222333000181550010000010011123456-82")]  // separador não aceito
     [TestCase("")]
     [TestCase("   ")]
     [TestCase(null)]

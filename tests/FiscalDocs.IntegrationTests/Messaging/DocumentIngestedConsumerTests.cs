@@ -164,7 +164,7 @@ public class DocumentIngestedConsumerTests
         await WaitForProcessedAsync(1);
 
         // Act
-        // Unacked messages return to the queue when the consumer's channel closes.
+        // Mensagens sem ack voltam para a fila quando o canal do consumidor fecha.
         await StopConsumerAsync();
 
         // Assert
@@ -222,7 +222,7 @@ public class DocumentIngestedConsumerTests
         aggregate.TotalAmount.Should().Be(30.00m);
     }
 
-    // The client reconnects by itself, so publishing right after the drop may fail for a few seconds.
+    // O cliente reconecta sozinho, então publicar logo após a queda pode falhar por alguns segundos.
     private async Task PublishWhenBrokerIsBackAsync(DocumentIngestedEvent @event)
     {
         var deadline = DateTime.UtcNow + WaitTimeout;

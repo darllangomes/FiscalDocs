@@ -35,8 +35,8 @@ public class ApiKeyAuthenticationTests
 
     [TestCase("wrong-key")]
     [TestCase("")]
-    [TestCase("test-api-key-not-a-secret ")] // trailing space is a different key
-    [TestCase("TEST-API-KEY-NOT-A-SECRET")] // comparison is case-sensitive
+    [TestCase("test-api-key-not-a-secret ")] // espaço no fim é outra chave
+    [TestCase("TEST-API-KEY-NOT-A-SECRET")] // a comparação diferencia maiúsculas
     public async Task InvalidKey_Returns401(string key)
     {
         // Arrange
@@ -72,7 +72,7 @@ public class ApiKeyAuthenticationTests
         using var client = _factory.CreateAuthenticatedClient();
 
         // Act
-        // Empty body: reaches the handler and fails validation (422), without touching the database.
+        // Corpo vazio: chega ao handler e falha na validação (422), sem tocar no banco.
         var response = await client.PostAsync(Route, EmptyXml());
 
         // Assert

@@ -8,7 +8,7 @@ public sealed class RabbitMqOptions
 
     public int ConnectionTimeoutSeconds { get; init; } = 5;
 
-    // One entry per retry; a message is delivered at most RetryDelays.Count + 1 times.
+    // Uma entrada por retry; a mensagem é entregue no máximo RetryDelays.Count + 1 vezes.
     public IReadOnlyList<TimeSpan> RetryDelays { get; init; } =
         new[] { TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(2) };
 }

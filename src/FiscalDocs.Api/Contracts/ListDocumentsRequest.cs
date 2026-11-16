@@ -19,7 +19,7 @@ public sealed class ListDocumentsRequest
     public DateOnly? IssuedFrom { get; init; }
     public DateOnly? IssuedTo { get; init; }
 
-    /// <summary>Validates the request; errors go to <paramref name="errors"/> and the result is null.</summary>
+    /// <summary>Valida a requisição; os erros vão para <paramref name="errors"/> e o resultado é nulo.</summary>
     public ListDocumentsQuery? ToQuery(ModelStateDictionary errors)
     {
         if (Page < 1)
@@ -51,7 +51,7 @@ public sealed class ListDocumentsRequest
             : null;
     }
 
-    // Matches names only, so numeric values such as "1" are rejected.
+    // Aceita só nomes; valores numéricos como "1" são rejeitados.
     private static T? ParseEnum<T>(string? value, string field, ModelStateDictionary errors) where T : struct, Enum
     {
         if (value is null) return null;
