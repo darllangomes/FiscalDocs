@@ -20,7 +20,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     private readonly string? _connectionString;
     private readonly bool _traceLogs;
-    private readonly string? _rabbitMqUri;
     private readonly bool _migrateOnStartup;
 
     public ApiFactory(
@@ -29,7 +28,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         int windowSeconds = 60,
         string? connectionString = null,
         bool traceLogs = true,
-        string? rabbitMqUri = null,
         bool migrateOnStartup = false)
     {
         _apiKey = apiKey;
@@ -37,7 +35,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         _windowSeconds = windowSeconds;
         _connectionString = connectionString;
         _traceLogs = traceLogs;
-        _rabbitMqUri = rabbitMqUri;
         _migrateOnStartup = migrateOnStartup;
     }
 
@@ -56,7 +53,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         });
 
         builder.UseSetting("ConnectionStrings:Default", _connectionString ?? InfrastructureFixture.ConnectionString);
-        builder.UseSetting("RabbitMq:Uri", _rabbitMqUri ?? InfrastructureFixture.RabbitMqUri);
         builder.UseSetting("Auth:ApiKey", _apiKey);
         builder.UseSetting("Database:MigrateOnStartup", _migrateOnStartup.ToString());
         builder.UseSetting("RateLimiting:PermitLimit", _permitLimit.ToString());

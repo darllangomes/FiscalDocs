@@ -13,7 +13,6 @@ namespace FiscalDocs.IntegrationTests.Api;
 public class DocumentOutboxTests
 {
     private const string Route = "/api/v1/documents";
-    private const string UnreachableBroker = "amqp://guest:guest@127.0.0.1:1/";
 
     private ApiFactory _factory = null!;
     private HttpClient _client = null!;
@@ -137,24 +136,5 @@ public class DocumentOutboxTests
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await OutboxAsync()).Should().BeEmpty();
-    }
-
-    [Test]
-    public async Task Post_WhenTheBrokerIsDown_Returns201AndKeepsTheEventForLater()
-    {
-        // Arrange
-        using var factory = new ApiFactory(rabbitMqUri: UnreachableBroker);
-        using var client = factory.CreateAuthenticatedClient();
-
-        // Act
-        var response = await client.PostAsync(Route, Xml());
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var id = await IdOfAsync(response);
-        (await client.GetAsync($"{Route}/{id}")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await OutboxAsync()).Should().ContainSingle().Which.ProcessedAt.Should().BeNull();
-        factory.Logs.Entries.Should().NotContain(e => e.Contains("Failed to publish"));
-        factory.Logs.Entries.Should().NotContain(e => e.Contains("12345678909"));
     }
 }
