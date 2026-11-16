@@ -10,7 +10,7 @@ API em .NET 8 que recebe o XML de documentos fiscais (**NFe** e **CTe**), guarda
 - [Segurança e dados sensíveis](#segurança-e-dados-sensíveis)
 - [Testes e CI](#testes-e-ci)
 - [Decisões e justificativas](#decisões-e-justificativas)
-- [Limitações conhecidas e próximos passos](#limitações-conhecidas-e-próximos-passos)
+- [Limitações conhecidas e possíveis melhorias](#limitações-conhecidas-e-possíveis-melhorias)
 - [Estrutura do repositório](#estrutura-do-repositório)
 
 Os comandos deste documento usam a sintaxe de um shell POSIX (Git Bash, WSL, macOS ou Linux).
@@ -126,6 +126,26 @@ FISCALDOCS_CONNECTION="Host=127.0.0.1;Port=5432;Database=fiscaldocs;Username=fis
   dotnet ef migrations add NomeDaMigration \
   --project src/FiscalDocs.Infrastructure --startup-project src/FiscalDocs.Api
 ```
+
+### Sem Docker
+
+O Docker é uma conveniência, não um requisito. A **API só precisa do PostgreSQL**: ela grava o documento e o evento na outbox e nunca fala com o broker ([ADR 0008](docs/adr/0008-api-independente-do-broker.md)). Assim dá para ingerir, consultar, editar e baixar documentos com o .NET SDK e um PostgreSQL 16 instalado no sistema.
+
+```bash
+# 1. No PostgreSQL local (como superusuário), crie o usuário e o banco:
+psql -U postgres -c "CREATE USER fiscaldocs WITH PASSWORD '<senha>';"
+psql -U postgres -c "CREATE DATABASE fiscaldocs OWNER fiscaldocs;"
+
+# 2. Configure e rode a API (as migrations são aplicadas ao subir):
+dotnet user-secrets set "ConnectionStrings:Default" "Host=127.0.0.1;Port=5432;Database=fiscaldocs;Username=fiscaldocs;Password=<senha>" --project src/FiscalDocs.Api
+dotnet user-secrets set "Auth:ApiKey" "<uma chave de desenvolvimento>" --project src/FiscalDocs.Api
+dotnet user-secrets set "Database:MigrateOnStartup" "true" --project src/FiscalDocs.Api
+dotnet run --project src/FiscalDocs.Api --launch-profile http     # Swagger em http://localhost:5260/swagger
+```
+
+O **Worker** (agregado diário, retry e DLQ) precisa também de um RabbitMQ 3.x instalado, sem plugins. Com ele rodando, use as mesmas instruções de [Desenvolvimento local](#desenvolvimento-local) para o Worker, com `RabbitMq:Uri` apontando para o seu servidor (por exemplo, `amqp://guest:guest@127.0.0.1:5672/`, e o usuário `guest` só aceita conexões da própria máquina). Sem o Worker, os eventos esperam na outbox e nada se perde.
+
+Os testes **unitários e de arquitetura** rodam sem Docker (`dotnet test tests/FiscalDocs.UnitTests` e `tests/FiscalDocs.ArchitectureTests`). Os de **integração** sobem PostgreSQL e RabbitMQ reais com o Testcontainers, então precisam do Docker.
 
 ### Configuração
 
@@ -342,7 +362,7 @@ Cada decisão tem um registro com contexto, alternativas descartadas e o custo a
 | Listagem | Paginação por offset | [0010](docs/adr/0010-paginacao-por-offset.md) |
 | Segurança | Chave de API, rate limit por IP, XXE e LGPD | [0011](docs/adr/0011-seguranca-e-dados-sensiveis.md) |
 
-## Limitações conhecidas e próximos passos
+## Limitações conhecidas e possíveis melhorias
 
 Limitações, com o registro onde cada uma é explicada:
 
@@ -359,7 +379,16 @@ Limitações, com o registro onde cada uma é explicada:
 - A DLQ não tem ferramenta de reprocessamento. Se a recuperação automática da conexão com o RabbitMQ desistir, só reiniciar o Worker resolve ([ADR 0007](docs/adr/0007-retry-com-ttl-dlq-e-recuperacao-do-rabbitmq.md)).
 - Os testes de carga ([`loadtests/`](loadtests/README.md)) mostram que, num notebook de desenvolvimento, a ingestão de NFes de 23 KB sustenta 300 documentos por segundo (p95 de 55 ms) e satura entre 300 e 400. O gargalo não foi investigado.
 
-Próximos passos: suporte a NFSe ([ADR 0003](docs/adr/0003-nfe-e-cte-com-nfse-como-extensao.md)), repetir a carga de consulta com um volume maior para reavaliar o keyset, cifrar o CPF, expor a métrica de atraso da outbox, limpar a `processed_messages` e uma sonda de saúde para o Worker.
+### Possíveis melhorias, com mais tempo
+
+Na ordem em que eu as faria:
+
+1. **Proteção dos dados.** Cifrar o CPF no banco (Data Protection), com um hash para poder filtrar. É a maior exposição que sobra: o CPF do destinatário e o do emitente ficam em texto puro, no XML e nas colunas.
+2. **Operação do Worker.** Métrica de atraso da outbox, sonda de saúde do Worker, limpeza da `processed_messages` e uma ferramenta para reprocessar a DLQ. Hoje o atraso só se vê olhando a tabela.
+3. **Acesso.** Chaves de API com escopos e rotação (o download do XML, por exemplo, devolveria os CPFs só a quem tem o escopo), ou JWT se houver usuários de verdade.
+4. **Escopo do domínio.** NFSe como terceiro tipo de documento ([ADR 0003](docs/adr/0003-nfe-e-cte-com-nfse-como-extensao.md)). Verificar a assinatura digital e o protocolo de autorização, que hoje são armazenados sem conferência: a API guarda documentos, não os homologa.
+5. **Escala.** Paginação por keyset quando o `COUNT(*)` pesar, o XML em armazenamento de objetos em vez da coluna `text`, e investigar o gargalo de cerca de 300 documentos por segundo medido nos testes de carga.
+6. **Implantação.** Trava para a migration na subida (hoje, uma réplica só na primeira vez), `ForwardedHeaders` e TLS atrás de um proxy reverso.
 
 ## Estrutura do repositório
 
