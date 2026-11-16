@@ -63,7 +63,7 @@ public class FiscalDocumentPersistenceTests
     public async Task SaveAndLoad_IssueDateIsStoredAsUtcInstant()
     {
         // Arrange
-        var original = Build(); // issued at -03:00
+        var original = Build(); // emitido em -03:00
         await SaveAsync(original);
         await using var context = InfrastructureFixture.CreateContext();
 

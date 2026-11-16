@@ -27,7 +27,7 @@ public sealed class FiscalDocumentConfiguration : IEntityTypeConfiguration<Fisca
         builder.Property(d => d.Number).HasMaxLength(20).IsRequired();
         builder.Property(d => d.Series).HasMaxLength(10).IsRequired();
 
-        // Npgsql only accepts offset 0 for timestamptz; the original offset stays in RawXml.
+        // O Npgsql só aceita offset 0 em timestamptz; o offset original fica no RawXml.
         builder.Property(d => d.IssueDate)
             .HasConversion(v => v.ToUniversalTime(), v => v)
             .IsRequired();

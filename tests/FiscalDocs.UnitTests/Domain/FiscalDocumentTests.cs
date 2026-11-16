@@ -96,7 +96,7 @@ public class FiscalDocumentTests
     public void Create_XmlHash_IsLowercaseSha256OfRawXml()
     {
         // Act & Assert
-        // SHA-256 of the UTF-8 bytes of "<a/>"
+        // SHA-256 dos bytes UTF-8 de "<a/>"
         Build(rawXml: "<a/>").XmlHash.Should()
             .Be("29114363f749a0226b6988dda3ca2492a954117ab6b5f382706c20300dabc079");
     }

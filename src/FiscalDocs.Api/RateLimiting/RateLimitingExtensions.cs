@@ -21,7 +21,6 @@ public static class RateLimitingExtensions
                 "RateLimiting:PermitLimit and RateLimiting:WindowSeconds must be greater than zero.")
             .ValidateOnStart();
 
-        // Registra os serviços do middleware; a configuração real é o Configure (lazy) abaixo.
         services.AddRateLimiter(_ => { });
 
         // Configurado via IOptions (lazy) para enxergar os valores definidos pela factory

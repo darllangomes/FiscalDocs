@@ -31,7 +31,7 @@ public sealed class OutboxRelay(
         }
     }
 
-    // A full batch means there may be more; a short one means the table is drained or a publish failed.
+    // Lote cheio indica que pode haver mais; lote curto indica tabela esgotada ou falha na publicação.
     private async Task DrainAsync(CancellationToken cancellationToken)
     {
         int sent;

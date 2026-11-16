@@ -54,7 +54,7 @@ public class DocumentsEndpointTests
         return await context.Documents.IgnoreQueryFilters().CountAsync();
     }
 
-    // ---------- Success ----------
+    // ---------- Sucesso ----------
 
     [TestCase("nfe-cnpj-numerico.xml")]
     [TestCase("nfe-cnpj-alfanumerico.xml")]
@@ -89,7 +89,7 @@ public class DocumentsEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
-    // ---------- Idempotency ----------
+    // ---------- Idempotência ----------
 
     [Test]
     public async Task Post_SameDocumentTwice_Returns200WithSameId()
@@ -162,7 +162,7 @@ public class DocumentsEndpointTests
         (await CountAllAsync()).Should().Be(1);
     }
 
-    // ---------- Invalid input ----------
+    // ---------- Entrada inválida ----------
 
     [TestCase("invalido.xml")]
     [TestCase("malicioso-xxe.xml")]

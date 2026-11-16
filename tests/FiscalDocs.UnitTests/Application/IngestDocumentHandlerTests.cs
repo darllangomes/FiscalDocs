@@ -38,7 +38,7 @@ public class IngestDocumentHandlerTests
         _handler = new IngestDocumentHandler(_loader, Resolver, _repository, _clock);
     }
 
-    // Builds the document that "already exists" in the repository, from the same XML.
+    // Monta o documento que "já existe" no repositório, a partir do mesmo XML.
     private static FiscalDocument ExistingFrom(string xml, string? rawXml = null)
     {
         var document = XDocument.Parse(xml);
@@ -57,7 +57,7 @@ public class IngestDocumentHandlerTests
         _repository.FindByAccessKeyAsync(existing.AccessKey, Arg.Any<CancellationToken>()).Returns(existing);
     }
 
-    // ---------- New document ----------
+    // ---------- Documento novo ----------
 
     [TestCase("nfe-cnpj-numerico.xml")]
     [TestCase("nfe-cnpj-alfanumerico.xml")]
@@ -114,7 +114,7 @@ public class IngestDocumentHandlerTests
             .FindByAccessKeyAsync(Arg.Any<AccessKey>(), Arg.Any<CancellationToken>());
     }
 
-    // ---------- Duplicates ----------
+    // ---------- Duplicatas ----------
 
     [Test]
     public async Task Handle_SameKeyAndSameContent_ReturnsAlreadyExistsWithExistingId()
@@ -182,7 +182,7 @@ public class IngestDocumentHandlerTests
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
-    // ---------- Invalid input ----------
+    // ---------- Entrada inválida ----------
 
     [TestCase("")]
     [TestCase("   ")]
@@ -227,7 +227,7 @@ public class IngestDocumentHandlerTests
     public async Task Handle_XmlViolatingEntityRules_ThrowsInvalidDocumentException()
     {
         // Arrange
-        // The parser accepts "PEX", but the entity requires a two-letter state.
+        // O parser aceita "PEX", mas a entidade exige UF com duas letras.
         var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml").Replace("<UF>PE</UF>", "<UF>PEX</UF>");
 
         // Act

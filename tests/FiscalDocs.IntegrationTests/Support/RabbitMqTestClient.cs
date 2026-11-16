@@ -44,7 +44,7 @@ public sealed class RabbitMqTestClient : IAsyncDisposable
     public Task<IReadOnlyList<ReceivedMessage>> ReceiveDeadLettersAsync(int expected, TimeSpan timeout) =>
         ReceiveAsync(RabbitMqTopology.DeadLetterQueue, expected, timeout);
 
-    // Ready messages only: unacked ones are not counted.
+    // Só mensagens prontas: as sem ack não entram na contagem.
     public async Task<int> CountRetryMessagesAsync()
     {
         var total = 0;

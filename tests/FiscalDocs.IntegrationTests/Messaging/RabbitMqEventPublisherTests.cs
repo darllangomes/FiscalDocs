@@ -128,6 +128,36 @@ public class RabbitMqEventPublisherTests
     }
 
     [Test]
+    public async Task Publish_AfterTheBrokerDropsEveryConnection_DeliversOnceItIsBack()
+    {
+        // Arrange
+        await _publisher.PublishAsync(NewEvent(), CancellationToken.None);
+        await _broker.ReceiveAsync(1, ReceiveTimeout);
+        await InfrastructureFixture.CloseRabbitMqConnectionsAsync();
+        await using var checker = await RabbitMqTestClient.ConnectAndPurgeAsync();
+        var @event = NewEvent();
+
+        // Act
+        var deadline = DateTime.UtcNow + ReceiveTimeout;
+        while (true)
+        {
+            try
+            {
+                await _publisher.PublishAsync(@event, CancellationToken.None);
+                break;
+            }
+            catch when (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(200);
+            }
+        }
+
+        // Assert
+        var messages = await checker.ReceiveAsync(1, ReceiveTimeout);
+        messages.Should().ContainSingle().Which.Properties.MessageId.Should().Be(@event.MessageId.ToString());
+    }
+
+    [Test]
     public async Task Publish_WhenTheBrokerIsUnreachable_Throws()
     {
         // Arrange

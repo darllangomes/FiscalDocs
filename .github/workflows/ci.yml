@@ -6,11 +6,11 @@ on:
   push:
     branches: [main]
 
-# Least privilege: the jobs only read the repository.
+# Privilégio mínimo: os jobs só leem o repositório.
 permissions:
   contents: read
 
-# A new push to the same branch cancels the run that is still in progress.
+# Um novo push na mesma branch cancela a execução que ainda está em andamento.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -34,7 +34,7 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-      # EF Core migrations are generated code, so they are not formatted by hand.
+      # As migrations do EF Core são código gerado, então não são formatadas à mão.
       - name: Check formatting (.editorconfig)
         run: >
           dotnet format --verify-no-changes --no-restore

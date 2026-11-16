@@ -24,7 +24,6 @@ public class FiscalDocumentRepositoryTests
             1500.00m, "<a/>", Now);
     }
 
-    // Each call uses its own context, like separate HTTP requests would.
     private static async Task<bool> TryAddAsync(FiscalDocument document)
     {
         await using var context = InfrastructureFixture.CreateContext();

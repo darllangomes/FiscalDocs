@@ -6,27 +6,27 @@ namespace FiscalDocs.Application.Abstractions;
 
 public interface IFiscalDocumentRepository
 {
-    /// <summary>Returns false when a document with the same access key already exists.</summary>
+    /// <summary>Devolve false quando já existe um documento com a mesma chave de acesso.</summary>
     Task<bool> TryAddAsync(FiscalDocument document, CancellationToken cancellationToken);
 
-    /// <summary>Looks up by access key, including soft-deleted documents.</summary>
+    /// <summary>Busca pela chave de acesso, inclusive documentos apagados (soft delete).</summary>
     Task<FiscalDocument?> FindByAccessKeyAsync(AccessKey accessKey, CancellationToken cancellationToken);
 
-    /// <summary>Read model for the API; excludes soft-deleted documents and never loads the raw XML.</summary>
+    /// <summary>Modelo de leitura da API; exclui documentos apagados e nunca carrega o XML bruto.</summary>
     Task<DocumentDetails?> FindDetailsByIdAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>Filtered, paged summaries, newest issue date first; excludes soft-deleted documents.</summary>
+    /// <summary>Resumos filtrados e paginados, emissão mais recente primeiro; exclui documentos apagados.</summary>
     Task<PagedResult<DocumentSummary>> ListAsync(ListDocumentsQuery query, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Loads the document (soft-deleted excluded), runs <paramref name="apply"/> on it and saves,
-    /// returning PreconditionFailed when the stored version differs from <paramref name="expectedVersion"/>.
-    /// Exceptions thrown by <paramref name="apply"/> propagate and nothing is saved.
+    /// Carrega o documento (apagados excluídos), executa <paramref name="apply"/> nele e salva,
+    /// devolvendo PreconditionFailed quando a versão gravada difere de <paramref name="expectedVersion"/>.
+    /// Exceções lançadas por <paramref name="apply"/> se propagam e nada é salvo.
     /// </summary>
     Task<UpdateDocumentResult> UpdateAsync(
         Guid id, uint expectedVersion, Action<FiscalDocument> apply, CancellationToken cancellationToken);
 
-    /// <summary>Soft-deletes the document; the version is checked only when <paramref name="expectedVersion"/> is given.</summary>
+    /// <summary>Apaga o documento (soft delete); a versão só é conferida quando <paramref name="expectedVersion"/> é informada.</summary>
     Task<DeleteDocumentOutcome> DeleteAsync(
         Guid id, uint? expectedVersion, DateTimeOffset now, CancellationToken cancellationToken);
 }

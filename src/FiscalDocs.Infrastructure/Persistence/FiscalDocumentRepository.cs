@@ -21,8 +21,8 @@ public sealed class FiscalDocumentRepository : IFiscalDocumentRepository
 
     public async Task<bool> TryAddAsync(FiscalDocument document, CancellationToken cancellationToken)
     {
-        // The event is stored with the document in one SaveChanges (one transaction): either both
-        // exist or neither does. The outbox relay publishes it later.
+        // O evento é gravado com o documento em um único SaveChanges (uma transação): ou os dois
+        // existem ou nenhum existe. O relay da outbox o publica depois.
         var outbox = OutboxMessage.From(IngestedEventFor(document));
         _context.Documents.Add(document);
         _context.OutboxMessages.Add(outbox);

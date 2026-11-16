@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# End-to-end check of the whole stack running in Docker Compose:
-# API -> outbox -> relay -> RabbitMQ -> consumer -> daily aggregate in Postgres.
+# Verificação ponta a ponta da stack inteira rodando no Docker Compose:
+# API -> outbox -> relay -> RabbitMQ -> consumidor -> agregado diário no Postgres.
 #
-# Usage: scripts/smoke-compose.sh [--keep]
-#   --keep  leaves the stack running afterwards (default: compose down -v)
+# Uso: scripts/smoke-compose.sh [--keep]
+#   --keep  deixa a stack no ar no final (padrão: compose down -v)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -21,8 +21,8 @@ set -a
 set +a
 : "${API_KEY:?Set API_KEY in .env (see .env.example)}"
 
-# A separate project name keeps its volumes apart from the development stack,
-# so "down -v" at the end can never wipe development data.
+# Um nome de projeto separado mantém os volumes longe da stack de desenvolvimento,
+# então o "down -v" do final nunca apaga dados de desenvolvimento.
 PROJECT="fiscaldocs-smoke"
 compose() { docker compose -p "$PROJECT" "$@"; }
 
@@ -41,7 +41,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# wait_for <description> <timeout-seconds> <command...>
+# wait_for <descrição> <timeout-em-segundos> <comando...>
 wait_for() {
   local description="$1" timeout="$2"
   shift 2
@@ -52,25 +52,25 @@ wait_for() {
   done
 }
 
-post_xml() { # <file> -> prints the HTTP status, body in $BODY
+post_xml() { # <arquivo> -> imprime o status HTTP; o corpo vai para $BODY
   curl -s -o "$BODY" -w "%{http_code}" -X POST "$ROUTE" \
     -H "X-Api-Key: $API_KEY" -H "Content-Type: application/xml" \
     --data-binary "@$1"
 }
 
-aggregate() { # <issuer-cnpj> -> "count|total" or empty
+aggregate() { # <cnpj-emitente> -> "contagem|total" ou vazio
   compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
     "SELECT document_count || '|' || total_amount FROM daily_issuer_aggregates WHERE issuer_cnpj = '$1'"
 }
 
 aggregate_is() { [[ "$(aggregate "$1" | tr -d '[:space:]')" == "$2" ]]; }
 
-count_is() { # <issuer-cnpj> <expected-count>
+count_is() { # <cnpj-emitente> <contagem-esperada>
   [[ "$(compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc     "SELECT document_count FROM daily_issuer_aggregates WHERE issuer_cnpj = '$1'" | tr -d '[:space:]')" == "$2" ]]
 }
 
 step "Checking for a development stack"
-# The containers have fixed names, so a stack from another project would collide with this one.
+# Os containers têm nomes fixos, então uma stack de outro projeto colidiria com esta.
 others="$(docker ps -a --filter "name=^fiscaldocs-(postgres|rabbitmq|api|worker)$"   --format '{{.Names}} {{.Label "com.docker.compose.project"}}' | grep -v " $PROJECT\$" || true)"
 if [[ -n "$others" ]]; then
   echo "$others" >&2

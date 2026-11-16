@@ -4,6 +4,6 @@ namespace FiscalDocs.Application.Parsing;
 
 public interface IXmlDocumentLoader
 {
-    /// <exception cref="Exceptions.InvalidDocumentException">Malformed or disallowed XML.</exception>
+    /// <exception cref="Exceptions.InvalidDocumentException">XML malformado ou não permitido.</exception>
     XDocument Load(string xml);
 }

@@ -12,14 +12,14 @@ public sealed class OutboxDispatcher(
     ILogger<OutboxDispatcher> logger)
 {
     /// <summary>
-    /// Publishes up to <paramref name="batchSize"/> pending messages, oldest first, and returns how many
-    /// were sent. Stops at the first failure so later messages stay pending and order is kept.
+    /// Publica até <paramref name="batchSize"/> mensagens pendentes, da mais antiga para a mais nova, e devolve quantas
+    /// foram enviadas. Para na primeira falha: as seguintes continuam pendentes e a ordem é mantida.
     /// </summary>
     public async Task<int> DispatchBatchAsync(int batchSize, CancellationToken cancellationToken)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-        // SKIP LOCKED: concurrent dispatchers take different rows instead of waiting or double-sending.
+        // SKIP LOCKED: dispatchers concorrentes pegam linhas diferentes, sem esperar nem enviar em duplicidade.
         var pending = await context.OutboxMessages
             .FromSqlInterpolated(
                 $"""

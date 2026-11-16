@@ -49,7 +49,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         }
         else
         {
-            // Type and status only: never the request body or the XML content.
+            // Só o tipo e o status: nunca o corpo da requisição nem o conteúdo do XML.
             _logger.LogWarning(
                 "Request rejected with {Status} ({ExceptionType}). TraceId: {TraceId}",
                 error.Status, exception.GetType().Name, traceId);

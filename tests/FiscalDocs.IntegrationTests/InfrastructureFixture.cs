@@ -19,8 +19,8 @@ public class InfrastructureFixture
         _rabbitMq?.GetConnectionString()
         ?? throw new InvalidOperationException("RabbitMQ container is not started.");
 
-    // Short delays so retry tests finish in seconds. Every consumer in the tests must use these:
-    // redeclaring a queue with a different x-message-ttl fails with PRECONDITION_FAILED.
+    // Atrasos curtos para os testes de retry terminarem em segundos. Todo consumidor nos testes deve usá-los:
+    // redeclarar uma fila com outro x-message-ttl falha com PRECONDITION_FAILED.
     public static IReadOnlyList<TimeSpan> RetryDelays { get; } =
         new[] { TimeSpan.FromMilliseconds(300), TimeSpan.FromMilliseconds(600), TimeSpan.FromMilliseconds(900) };
 
@@ -46,6 +46,16 @@ public class InfrastructureFixture
         if (_rabbitMq is not null)
         {
             await _rabbitMq.DisposeAsync();
+        }
+    }
+
+    public static async Task CloseRabbitMqConnectionsAsync()
+    {
+        var result = await (_rabbitMq ?? throw new InvalidOperationException("RabbitMQ container is not started."))
+            .ExecAsync(new[] { "rabbitmqctl", "close_all_connections", "test" });
+        if (result.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"rabbitmqctl failed: {result.Stderr}");
         }
     }
 
