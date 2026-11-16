@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <UserSecretsId>0ecd2a2d-f1ba-4e41-b435-5a548ca3fb59</UserSecretsId>
+    <!-- Os comentários XML alimentam o Swagger. CS1591 (membro sem comentário) e CS1573 (param só do que importa
+         ao cliente, sem o CancellationToken) ficam de fora. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591;1573</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,6 +6,7 @@ using FiscalDocs.Api.ErrorHandling;
 using FiscalDocs.Api.Authentication;
 using FiscalDocs.Api.Health;
 using FiscalDocs.Api.RateLimiting;
+using FiscalDocs.Api.Swagger;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -23,8 +24,29 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "FiscalDocs API",
         Version = "v1",
-        Description = "Ingestão e consulta de documentos fiscais (NFe e CTe) a partir do XML."
+        Description = """
+            Ingestão e consulta de documentos fiscais (**NFe** e **CTe**) a partir do XML.
+
+            **Como autenticar.** Todas as rotas exigem o header `X-Api-Key`. Clique em **Authorize**, cole a chave
+            (a que você configurou em `Auth:ApiKey`, ou `API_KEY` no `.env`) e confirme.
+
+            **Fluxo para experimentar:**
+            1. `POST /api/v1/documents`: envie um XML (o exemplo do corpo já é um documento válido). `201` cria; reenviar o mesmo XML dá `200`.
+            2. `GET /api/v1/documents`: liste e copie o `id` de um item.
+            3. `GET /api/v1/documents/{id}`: leia o documento e anote o `ETag` da resposta.
+            4. `PATCH /api/v1/documents/{id}`: informe o ETag (entre aspas) em `If-Match` e altere `status` ou `notes`.
+            5. `GET /api/v1/documents/{id}/xml`: baixe o XML original.
+
+            O roteiro completo, com os casos de erro, está em `docs/manual-testing.md`.
+            """
     });
+
+    var xmlComments = Path.Combine(AppContext.BaseDirectory, $"{typeof(Program).Assembly.GetName().Name}.xml");
+    if (File.Exists(xmlComments))
+        options.IncludeXmlComments(xmlComments);
+
+    options.OperationFilter<OperationDocumentationFilter>();
+    options.SchemaFilter<ContractDocumentationFilter>();
 
     options.AddSecurityDefinition(ApiKeyAuthenticationHandler.SchemeName, new OpenApiSecurityScheme
     {
