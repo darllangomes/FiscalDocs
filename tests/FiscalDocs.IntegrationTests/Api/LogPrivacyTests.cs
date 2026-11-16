@@ -1,5 +1,7 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using FiscalDocs.IntegrationTests.Support;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +102,22 @@ public class LogPrivacyTests
         entries.Should().NotBeEmpty("uma captura vazia faria as verificações abaixo passarem sem provar nada");
         entries.Should().NotContain(e => e.Contains("52998224725"), "o CPF do emitente nunca deve ser logado");
         entries.Should().NotContain(e => e.Contains("529.982.247-25"));
+    }
+
+    [Test]
+    public async Task XmlDownload_DoesNotLogCpfOrXml()
+    {
+        // Arrange
+        var created = await PostAsync(SampleWithCpf());
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        // Act
+        var response = await _client.GetAsync($"{Route}/{id}/xml");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).Should().Contain($"<CPF>{Cpf}</CPF>");
+        AssertNothingSensitiveWasLogged();
     }
 
     [Test]
