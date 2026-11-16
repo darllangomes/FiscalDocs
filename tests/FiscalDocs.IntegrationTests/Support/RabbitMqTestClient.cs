@@ -52,6 +52,14 @@ public sealed class RabbitMqTestClient : IAsyncDisposable
     public async Task<IReadOnlyList<ReceivedMessage>> ReceiveAllAsync() =>
         await ReceiveAsync(int.MaxValue, TimeSpan.FromMilliseconds(300));
 
+    public async Task PublishRawAsync(string body) =>
+        await _channel.BasicPublishAsync(
+            RabbitMqTopology.Exchange,
+            RabbitMqTopology.DocumentIngestedRoutingKey,
+            mandatory: true,
+            basicProperties: new BasicProperties { DeliveryMode = DeliveryModes.Persistent },
+            body: Encoding.UTF8.GetBytes(body));
+
     public async ValueTask DisposeAsync()
     {
         await _channel.DisposeAsync();
