@@ -33,7 +33,7 @@ public class LogPrivacyTests
     [SetUp]
     public async Task CleanTable()
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE fiscal_documents");
     }
 

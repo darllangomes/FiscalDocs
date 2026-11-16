@@ -13,7 +13,8 @@ public static class HealthExtensions
     {
         services
             .AddHealthChecks()
-            .AddCheck<DatabaseHealthCheck>("database", tags: [ReadyTag]);
+            .AddCheck<DatabaseHealthCheck>("database", tags: [ReadyTag])
+            .AddCheck<RabbitMqHealthCheck>("rabbitmq", tags: [ReadyTag]);
 
         return services;
     }

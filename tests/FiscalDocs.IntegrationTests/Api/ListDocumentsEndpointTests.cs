@@ -43,7 +43,7 @@ public class ListDocumentsEndpointTests
     [SetUp]
     public async Task SeedAsync()
     {
-        await using (var context = PostgresFixture.CreateContext())
+        await using (var context = InfrastructureFixture.CreateContext())
             await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE fiscal_documents");
 
         foreach (var file in Samples)
@@ -68,7 +68,7 @@ public class ListDocumentsEndpointTests
 
     private static async Task ModifyAsync(string number, Action<FiscalDocument> change)
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         var document = await context.Documents.SingleAsync(d => d.Number == number);
         change(document);
         await context.SaveChangesAsync();

@@ -34,7 +34,7 @@ public class PatchDocumentEndpointTests
     [SetUp]
     public async Task CleanTable()
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE fiscal_documents");
     }
 
@@ -434,7 +434,7 @@ public class PatchDocumentEndpointTests
         // Arrange
         var id = await IngestSampleAsync();
         var etag = await GetEtagAsync(id);
-        await using (var context = PostgresFixture.CreateContext())
+        await using (var context = InfrastructureFixture.CreateContext())
         {
             var document = await context.Documents.IgnoreQueryFilters().SingleAsync(d => d.Id == id);
             document.MarkAsDeleted(DateTimeOffset.UtcNow);

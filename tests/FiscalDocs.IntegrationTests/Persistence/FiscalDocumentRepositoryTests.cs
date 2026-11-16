@@ -27,27 +27,27 @@ public class FiscalDocumentRepositoryTests
     // Each call uses its own context, like separate HTTP requests would.
     private static async Task<bool> TryAddAsync(FiscalDocument document)
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         return await new FiscalDocumentRepository(context).TryAddAsync(document, CancellationToken.None);
     }
 
     private static async Task<FiscalDocument?> FindAsync(string key)
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         return await new FiscalDocumentRepository(context)
             .FindByAccessKeyAsync(AccessKey.Parse(key), CancellationToken.None);
     }
 
     private static async Task<int> CountAllAsync()
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         return await context.Documents.IgnoreQueryFilters().CountAsync();
     }
 
     [SetUp]
     public async Task CleanTable()
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE fiscal_documents");
     }
 
@@ -79,7 +79,7 @@ public class FiscalDocumentRepositoryTests
     public async Task TryAdd_DuplicateInSameContext_ReturnsFalseAndContextStaysUsable()
     {
         // Arrange
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         var repository = new FiscalDocumentRepository(context);
         var first = Build();
         await repository.TryAddAsync(first, CancellationToken.None);

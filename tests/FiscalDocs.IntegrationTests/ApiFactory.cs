@@ -20,19 +20,22 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     private readonly string? _connectionString;
     private readonly bool _traceLogs;
+    private readonly string? _rabbitMqUri;
 
     public ApiFactory(
         string apiKey = TestApiKey,
         int permitLimit = DefaultPermitLimit,
         int windowSeconds = 60,
         string? connectionString = null,
-        bool traceLogs = true)
+        bool traceLogs = true,
+        string? rabbitMqUri = null)
     {
         _apiKey = apiKey;
         _permitLimit = permitLimit;
         _windowSeconds = windowSeconds;
         _connectionString = connectionString;
         _traceLogs = traceLogs;
+        _rabbitMqUri = rabbitMqUri;
     }
 
     public CapturingLoggerProvider Logs { get; } = new();
@@ -49,7 +52,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             }
         });
 
-        builder.UseSetting("ConnectionStrings:Default", _connectionString ?? PostgresFixture.ConnectionString);
+        builder.UseSetting("ConnectionStrings:Default", _connectionString ?? InfrastructureFixture.ConnectionString);
+        builder.UseSetting("RabbitMq:Uri", _rabbitMqUri ?? InfrastructureFixture.RabbitMqUri);
         builder.UseSetting("Auth:ApiKey", _apiKey);
         builder.UseSetting("RateLimiting:PermitLimit", _permitLimit.ToString());
         builder.UseSetting("RateLimiting:WindowSeconds", _windowSeconds.ToString());

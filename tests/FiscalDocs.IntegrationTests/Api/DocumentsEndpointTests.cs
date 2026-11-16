@@ -35,7 +35,7 @@ public class DocumentsEndpointTests
     [SetUp]
     public async Task CleanTable()
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE fiscal_documents");
     }
 
@@ -50,7 +50,7 @@ public class DocumentsEndpointTests
 
     private static async Task<int> CountAllAsync()
     {
-        await using var context = PostgresFixture.CreateContext();
+        await using var context = InfrastructureFixture.CreateContext();
         return await context.Documents.IgnoreQueryFilters().CountAsync();
     }
 
@@ -130,7 +130,7 @@ public class DocumentsEndpointTests
         // Arrange
         var xml = SampleFiles.ReadAllText("nfe-cnpj-numerico.xml");
         var id = await IdOfAsync(await PostAsync(xml));
-        await using (var context = PostgresFixture.CreateContext())
+        await using (var context = InfrastructureFixture.CreateContext())
         {
             var document = await context.Documents.SingleAsync(d => d.Id == id);
             document.MarkAsDeleted(DateTimeOffset.UtcNow);
