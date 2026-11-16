@@ -1,12 +1,14 @@
 using System.Text.Json.Serialization;
 using FiscalDocs.Application;
 using FiscalDocs.Infrastructure;
+using FiscalDocs.Infrastructure.Persistence;
 using FiscalDocs.Api.ErrorHandling;
 using FiscalDocs.Api.Authentication;
 using FiscalDocs.Api.Health;
 using FiscalDocs.Api.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +40,12 @@ builder.Services.AddApiRateLimiting(builder.Configuration);
 builder.Services.AddApiHealthChecks();
 
 var app = builder.Build();
+
+if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<FiscalDocsDbContext>().Database.MigrateAsync();
+}
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
