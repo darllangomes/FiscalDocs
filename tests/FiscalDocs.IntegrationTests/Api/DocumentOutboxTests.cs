@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using FiscalDocs.Infrastructure.Messaging;
 using FiscalDocs.IntegrationTests.Support;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -9,11 +10,10 @@ using Microsoft.EntityFrameworkCore;
 namespace FiscalDocs.IntegrationTests.Api;
 
 [TestFixture]
-public class DocumentEventPublishingTests
+public class DocumentOutboxTests
 {
     private const string Route = "/api/v1/documents";
     private const string UnreachableBroker = "amqp://guest:guest@127.0.0.1:1/";
-    private static readonly TimeSpan ReceiveTimeout = TimeSpan.FromSeconds(10);
 
     private ApiFactory _factory = null!;
     private HttpClient _client = null!;
@@ -24,7 +24,7 @@ public class DocumentEventPublishingTests
     {
         await using (var context = InfrastructureFixture.CreateContext())
         {
-            await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE fiscal_documents");
+            await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE fiscal_documents, outbox_messages");
         }
 
         _broker = await RabbitMqTestClient.ConnectAndPurgeAsync();
@@ -49,8 +49,14 @@ public class DocumentEventPublishingTests
         return body.GetProperty("id").GetGuid();
     }
 
+    private static async Task<List<OutboxMessage>> OutboxAsync()
+    {
+        await using var context = InfrastructureFixture.CreateContext();
+        return await context.OutboxMessages.AsNoTracking().ToListAsync();
+    }
+
     [Test]
-    public async Task Post_NewDocument_PublishesOneEventForIt()
+    public async Task Post_NewDocument_StoresOneOutboxMessageForIt()
     {
         // Act
         var response = await _client.PostAsync(Route, Xml());
@@ -58,9 +64,10 @@ public class DocumentEventPublishingTests
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var id = await IdOfAsync(response);
-        var messages = await _broker.ReceiveAsync(1, ReceiveTimeout);
-        messages.Should().ContainSingle();
-        var json = JsonDocument.Parse(messages[0].Body).RootElement;
+        var message = (await OutboxAsync()).Should().ContainSingle().Subject;
+        message.ProcessedAt.Should().BeNull();
+        var json = JsonDocument.Parse(message.Payload).RootElement;
+        json.GetProperty("messageId").GetGuid().Should().Be(message.Id);
         json.GetProperty("documentId").GetGuid().Should().Be(id);
         json.GetProperty("type").GetString().Should().Be("NFe");
         json.GetProperty("issuerCnpj").GetString().Should().Be("11222333000181");
@@ -68,20 +75,31 @@ public class DocumentEventPublishingTests
     }
 
     [Test]
-    public async Task Post_Event_NeverCarriesRecipientDataOrXml()
+    public async Task Post_NewDocument_DoesNotTouchTheBroker()
+    {
+        // Act
+        var response = await _client.PostAsync(Route, Xml());
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        (await _broker.ReceiveAllAsync()).Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Post_Payload_NeverCarriesRecipientDataOrXml()
     {
         // Act
         await _client.PostAsync(Route, Xml());
 
         // Assert
-        var message = (await _broker.ReceiveAsync(1, ReceiveTimeout)).Single();
-        message.Body.Should().NotContain("12345678909");
-        message.Body.Should().NotContain("CLIENTE FICTICIO");
-        message.Body.Should().NotContain("<");
+        var payload = (await OutboxAsync()).Single().Payload;
+        payload.Should().NotContain("12345678909");
+        payload.Should().NotContain("CLIENTE FICTICIO");
+        payload.Should().NotContain("<");
     }
 
     [Test]
-    public async Task Post_SameDocumentTwice_PublishesOnlyOnce()
+    public async Task Post_SameDocumentTwice_StoresOnlyOneMessage()
     {
         // Arrange
         (await _client.PostAsync(Route, Xml())).StatusCode.Should().Be(HttpStatusCode.Created);
@@ -91,11 +109,11 @@ public class DocumentEventPublishingTests
 
         // Assert
         second.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await _broker.ReceiveAllAsync()).Should().ContainSingle();
+        (await OutboxAsync()).Should().ContainSingle();
     }
 
     [Test]
-    public async Task Post_SameKeyWithDifferentContent_PublishesNothingNew()
+    public async Task Post_SameKeyWithDifferentContent_StoresNothingNew()
     {
         // Arrange
         (await _client.PostAsync(Route, Xml())).StatusCode.Should().Be(HttpStatusCode.Created);
@@ -107,22 +125,22 @@ public class DocumentEventPublishingTests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        (await _broker.ReceiveAllAsync()).Should().ContainSingle();
+        (await OutboxAsync()).Should().ContainSingle();
     }
 
     [Test]
-    public async Task Post_RejectedXml_PublishesNothing()
+    public async Task Post_RejectedXml_StoresNothing()
     {
         // Act
         var response = await _client.PostAsync(Route, Xml("invalido.xml"));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await _broker.ReceiveAllAsync()).Should().BeEmpty();
+        (await OutboxAsync()).Should().BeEmpty();
     }
 
     [Test]
-    public async Task Post_WhenTheBrokerIsDown_StillReturns201_PersistsTheDocumentAndLogsTheError()
+    public async Task Post_WhenTheBrokerIsDown_Returns201AndKeepsTheEventForLater()
     {
         // Arrange
         using var factory = new ApiFactory(rabbitMqUri: UnreachableBroker);
@@ -135,7 +153,8 @@ public class DocumentEventPublishingTests
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var id = await IdOfAsync(response);
         (await client.GetAsync($"{Route}/{id}")).StatusCode.Should().Be(HttpStatusCode.OK);
-        factory.Logs.Entries.Should().Contain(e => e.Contains("Failed to publish") && e.Contains(id.ToString()));
+        (await OutboxAsync()).Should().ContainSingle().Which.ProcessedAt.Should().BeNull();
+        factory.Logs.Entries.Should().NotContain(e => e.Contains("Failed to publish"));
         factory.Logs.Entries.Should().NotContain(e => e.Contains("12345678909"));
     }
 }
